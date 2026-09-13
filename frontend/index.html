@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Irrigation Control Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="34" height="34">
+            <path d="M20 4 C20 4 8 15 8 24 a12 12 0 0 0 24 0 C32 15 20 4 20 4 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M20 15 C20 15 14 21 14 25.5 a6 6 0 0 0 12 0 C26 21 20 15 20 15 Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>Smart Irrigation Control Center</h1>
+          <p>AI-powered real-time irrigation monitoring</p>
+        </div>
+      </div>
+
+      <div class="header-status">
+        <div class="conn-pill" id="connPill" data-state="loading">
+          <span class="conn-dot" id="connDot"></span>
+          <span id="connLabel">CONNECTING…</span>
+        </div>
+        <div class="last-updated" id="lastUpdated">Waiting for first reading…</div>
+      </div>
+    </div>
+    <div class="header-nameplate">
+      <span>UNIT&nbsp;01 — FIELD NODE</span>
+      <span class="nameplate-sep">/</span>
+      <span>ESP32 · RANDOM FOREST MODEL</span>
+      <span class="nameplate-sep">/</span>
+      <span>MONITOR ONLY — NO REMOTE OVERRIDE</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+
+    <!-- ===================== LOADING STATE ===================== -->
+    <div class="loading-banner" id="loadingBanner">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <div>
+        <strong>Connecting to irrigation system…</strong>
+        <span>Fetching the latest sensor reading from the field controller.</span>
+      </div>
+    </div>
+
+    <!-- ===================== OFFLINE WARNING ===================== -->
+    <div class="offline-banner" id="offlineBanner" hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2 1 21h22L12 2Zm0 6 6.5 11h-13L12 8Zm-.9 4v3.2h1.8V12h-1.8Zm0 4.4v1.8h1.8v-1.8h-1.8Z" fill="currentColor"/></svg>
+      Unable to connect to irrigation backend — showing last known readings.
+    </div>
+
+    <!-- ===================== PUMP STATUS PANEL ===================== -->
+    <section class="pump-panel" id="pumpPanel" data-status="off" aria-live="polite">
+      <div class="pump-panel-glow" aria-hidden="true"></div>
+
+      <div class="pump-panel-left">
+        <div class="pump-gauge">
+          <svg viewBox="0 0 140 140" class="pump-gauge-ring" aria-hidden="true">
+            <circle cx="70" cy="70" r="62" class="gauge-track" />
+            <circle cx="70" cy="70" r="62" class="gauge-sweep" id="pumpGaugeSweep" />
+          </svg>
+          <div class="pump-indicator" id="pumpIndicator">
+            <svg viewBox="0 0 100 100" class="pump-icon" aria-hidden="true">
+              <path d="M32 62 V44 a18 18 0 0 1 36 0 v18" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+              <rect x="27" y="62" width="46" height="10" rx="4" fill="currentColor"/>
+              <path d="M50 26 v-9 M50 17 l-5 6 M50 17 l5 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="pump-panel-right">
+        <div class="pump-heading-row">
+          <span class="pump-eyebrow">Irrigation pump</span>
+          <span class="pump-mode-tag">MODE: AUTO</span>
+        </div>
+        <h2 class="pump-state" id="pumpStateText">Reading system…</h2>
+        <p class="pump-sub" id="pumpSubText">Waiting for system data…</p>
+      </div>
+    </section>
+
+    <!-- ===================== TELEMETRY GRID ===================== -->
+    <section class="telemetry-grid">
+
+      <!-- Soil Moisture -->
+      <article class="metric-card" data-metric="soil">
+        <div class="metric-head">
+          <span class="metric-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 20h18M6 20V11a3 3 0 0 1 3-3h1M18 20V13a4 4 0 0 0-4-4h-1" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="9" cy="6" r="1.6" fill="currentColor"/></svg>
+          </span>
+          <span class="metric-title">Soil Moisture</span>
+        </div>
+        <div class="metric-body">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 120 120" class="ring-svg">
+              <circle cx="60" cy="60" r="50" class="ring-zone ring-zone--dry" />
+              <circle cx="60" cy="60" r="50" class="ring-zone ring-zone--optimal" />
+              <circle cx="60" cy="60" r="50" class="ring-zone ring-zone--wet" />
+              <circle cx="60" cy="60" r="50" class="ring-track" />
+              <circle cx="60" cy="60" r="50" class="ring-fill" id="soilRing" />
+            </svg>
+            <div class="ring-value">
+              <span id="soilValue">--</span>
+              <small>%</small>
+            </div>
+          </div>
+          <div class="ring-legend">
+            <span><i class="dot dot--dry"></i>Dry</span>
+            <span><i class="dot dot--optimal"></i>Optimal</span>
+            <span><i class="dot dot--wet"></i>Wet</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Temperature -->
+      <article class="metric-card" data-metric="temp">
+        <div class="metric-head">
+          <span class="metric-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3a2.5 2.5 0 0 0-2.5 2.5v8.55a4.5 4.5 0 1 0 5 0V5.5A2.5 2.5 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="17.5" r="2" fill="currentColor"/></svg>
+          </span>
+          <span class="metric-title">Temperature</span>
+        </div>
+        <div class="metric-body metric-body--simple">
+          <div class="big-number"><span id="tempValue">--</span><small>°C</small></div>
+          <div class="range-gauge">
+            <div class="range-gauge-track">
+              <div class="range-gauge-fill" id="tempGaugeFill"></div>
+              <div class="range-gauge-marker" id="tempGaugeMarker"></div>
+            </div>
+            <div class="range-gauge-scale"><span>15°</span><span>45°</span></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Humidity -->
+      <article class="metric-card" data-metric="humidity">
+        <div class="metric-head">
+          <span class="metric-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3s7 8.2 7 12.5A7 7 0 1 1 5 15.5C5 11.2 12 3 12 3Z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="metric-title">Humidity</span>
+        </div>
+        <div class="metric-body metric-body--simple">
+          <div class="big-number"><span id="humidityValue">--</span><small>%</small></div>
+          <div class="range-gauge">
+            <div class="range-gauge-track">
+              <div class="range-gauge-fill" id="humidityGaugeFill"></div>
+              <div class="range-gauge-marker" id="humidityGaugeMarker"></div>
+            </div>
+            <div class="range-gauge-scale"><span>0%</span><span>100%</span></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Water Reservoir -->
+      <article class="metric-card metric-card--tank" data-metric="tank" data-level="normal">
+        <div class="metric-head">
+          <span class="metric-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 3h12v6.5c3 3 3 8-1 10.5-3.5 2-8.5 2-12 0-4-2.5-4-7.5-1-10.5V3Z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="metric-title">Water Reservoir</span>
+        </div>
+        <div class="metric-body metric-body--tank">
+          <div class="tank-visual">
+            <div class="tank-shell">
+              <div class="tank-critical-line" style="bottom:15%"></div>
+              <div class="tank-fill" id="tankFill">
+                <svg class="tank-wave" viewBox="0 0 120 16" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0 8 Q 15 0 30 8 T 60 8 T 90 8 T 120 8 V16 H0 Z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="tank-readout">
+            <div class="big-number"><span id="tankValue">--</span><small>%</small></div>
+            <p class="metric-note" id="tankNote">&nbsp;</p>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- ===================== SAFETY ALERT / NORMAL STATUS ===================== -->
+    <section id="safetySection">
+      <div class="safety-alert" id="safetyAlert" hidden>
+        <div class="safety-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2 1 21h22L12 2Zm0 6.5L18.9 19H5.1L12 8.5Zm-1 3v4h2v-4h-2Zm0 5.4v2h2v-2h-2Z" fill="currentColor"/></svg>
+        </div>
+        <div class="safety-copy">
+          <h3>Critical Safety Alert</h3>
+          <p class="safety-headline" id="safetyHeadline">Water Tank Level Low</p>
+          <p class="safety-detail">Pump has been locked to prevent dry running.</p>
+          <p class="safety-reason" id="safetyReasonText">Critical: Water Tank Level &lt; 15%</p>
+        </div>
+      </div>
+      <div class="safety-normal" id="safetyNormal" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 12.5 9 17.5 20 6.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Safety systems normal
+      </div>
+    </section>
+
+    <!-- ===================== AI DECISION & DIAGNOSTICS ===================== -->
+    <section class="diagnostics-panel">
+      <div class="diagnostics-header">
+        <h2>AI Decision &amp; System Diagnostics</h2>
+        <span class="diagnostics-sub">Why the controller made this call</span>
+      </div>
+
+      <div class="diagnostics-grid">
+        <div class="diag-block">
+          <span class="diag-label">AI Recommendation</span>
+          <div class="diag-value" id="aiRecommendation">
+            <span class="diag-chip" id="aiRecChip">--</span>
+          </div>
+        </div>
+        <div class="diag-block">
+          <span class="diag-label">System Action</span>
+          <div class="diag-value" id="systemAction">
+            <span class="diag-chip" id="actionChip">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reason-readout">
+        <span class="reason-label">Reason</span>
+        <p class="reason-text" id="reasonText">AWAITING DATA…</p>
+      </div>
+
+      <div class="secondary-sensors">
+        <div class="sensor-row">
+          <div class="sensor-label-group">
+            <span class="sensor-label">Sunlight Intensity</span>
+            <span class="sensor-hint">LDR sensor reading (raw, 0–4095)</span>
+          </div>
+          <div class="sensor-bar-wrap">
+            <div class="sensor-bar-track">
+              <div class="sensor-bar-fill" id="lightBar"></div>
+            </div>
+            <span class="sensor-bar-value" id="lightValue">--</span>
+          </div>
+        </div>
+
+        <div class="sensor-row">
+          <div class="sensor-label-group">
+            <span class="sensor-label">Moisture Drop Rate</span>
+            <span class="sensor-hint">Change in soil moisture per reading</span>
+          </div>
+          <span class="sensor-plain-value" id="dropRateValue">--</span>
+        </div>
+
+        <div class="sensor-row">
+          <div class="sensor-label-group">
+            <span class="sensor-label">Time Since Irrigation</span>
+            <span class="sensor-hint">Minutes since the last watering cycle</span>
+          </div>
+          <span class="sensor-plain-value" id="timeSinceValue">--</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Smart Irrigation Control Center &middot; Monitoring only &middot; Pump control is fully automated by the backend decision engine.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
