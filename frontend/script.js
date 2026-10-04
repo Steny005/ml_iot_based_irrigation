@@ -1,255 +1,1188 @@
-/* ==========================================================================
-   Smart Irrigation Control Center — Dashboard logic
-   Talks to the existing FastAPI backend at GET /api/dashboard.
-   No pump control, no independent safety logic — the backend is authoritative.
-   ========================================================================== */
+const DASHBOARD_API =
+  "http://127.0.0.1:8000/api/dashboard";
 
-const API_URL = "http://127.0.0.1:8000/api/dashboard";
-const POLL_INTERVAL_MS = 3000;
+const WEATHER_API =
+  "http://127.0.0.1:8000/api/weather";
 
-// Backend safety threshold (mirrors backend/main.py — for VISUAL classification only).
-const TANK_CRITICAL_THRESHOLD = 15;
-const TANK_LOW_THRESHOLD = 35;
+const POLL_MS = 3000;
 
-// Soil moisture ring geometry (r=50 -> circumference ~314.16)
-const RING_CIRCUMFERENCE = 2 * Math.PI * 50;
+const WEATHER_POLL_MS =
+  10 * 60 * 1000;
 
-// Rough working range for the raw LDR sensor (12-bit ADC on ESP32: 0–4095)
-const LIGHT_MAX = 4095;
 
-// Display-only ranges used to position the temperature/humidity range gauges.
-// These do NOT affect any backend logic — purely for visual context.
-const TEMP_GAUGE_MIN = 15;
-const TEMP_GAUGE_MAX = 45;
+// ============================================================
+// DOM HELPER
+// ============================================================
 
-let hasReceivedFirstReading = false;
-let lastSuccessfulFetchAt = null;
+const $ = (id) =>
+  document.getElementById(id);
 
-// ------------------------------------------------------------------------
-// DOM references
-// ------------------------------------------------------------------------
+
+// ============================================================
+// DOM REFERENCES
+// ============================================================
+
 const el = {
-  connPill: document.getElementById("connPill"),
-  connDot: document.getElementById("connDot"),
-  connLabel: document.getElementById("connLabel"),
-  lastUpdated: document.getElementById("lastUpdated"),
 
-  loadingBanner: document.getElementById("loadingBanner"),
-  offlineBanner: document.getElementById("offlineBanner"),
+  connPill: $("connPill"),
+  connDot: $("connDot"),
+  connLabel: $("connLabel"),
+  lastUpdated: $("lastUpdated"),
 
-  pumpPanel: document.getElementById("pumpPanel"),
-  pumpStateText: document.getElementById("pumpStateText"),
-  pumpSubText: document.getElementById("pumpSubText"),
+  loading: $("loadingBanner"),
+  offline: $("offlineBanner"),
 
-  soilRing: document.getElementById("soilRing"),
-  soilValue: document.getElementById("soilValue"),
+  hero: $("decisionHero"),
+  title: $("decisionTitle"),
+  description: $("decisionDescription"),
+  mark: $("decisionMark"),
 
-  tempValue: document.getElementById("tempValue"),
-  tempGaugeFill: document.getElementById("tempGaugeFill"),
-  tempGaugeMarker: document.getElementById("tempGaugeMarker"),
+  mlTag: $("mlTag"),
+  weatherTag: $("weatherTag"),
+  tankTag: $("tankTag"),
 
-  humidityValue: document.getElementById("humidityValue"),
-  humidityGaugeFill: document.getElementById("humidityGaugeFill"),
-  humidityGaugeMarker: document.getElementById("humidityGaugeMarker"),
+  pumpOrb: $("pumpOrb"),
+  pumpStatus: $("pumpStatusText"),
+  pumpSub: $("pumpSubText"),
+  pumpCommand: $("pumpCommand"),
+  overrideState: $("overrideState"),
 
-  tankCard: document.querySelector('.metric-card[data-metric="tank"]'),
-  tankFill: document.getElementById("tankFill"),
-  tankValue: document.getElementById("tankValue"),
-  tankNote: document.getElementById("tankNote"),
+  weatherIcon: $("weatherIcon"),
+  weatherHeadline: $("weatherHeadline"),
+  weatherDetail: $("weatherDetail"),
+  rainProbability: $("rainProbability"),
+  rainAmount: $("rainAmount"),
+  forecastStrip: $("forecastStrip"),
 
-  safetyAlert: document.getElementById("safetyAlert"),
-  safetyNormal: document.getElementById("safetyNormal"),
-  safetyReasonText: document.getElementById("safetyReasonText"),
+  soil: $("soilValue"),
+  soilBar: $("soilBar"),
+  soilNote: $("soilNote"),
 
-  aiRecChip: document.getElementById("aiRecChip"),
-  actionChip: document.getElementById("actionChip"),
-  reasonText: document.getElementById("reasonText"),
+  temp: $("tempValue"),
+  tempBar: $("tempBar"),
 
-  lightBar: document.getElementById("lightBar"),
-  lightValue: document.getElementById("lightValue"),
-  dropRateValue: document.getElementById("dropRateValue"),
-  timeSinceValue: document.getElementById("timeSinceValue"),
+  humidity: $("humidityValue"),
+  humidityBar: $("humidityBar"),
+
+  tank: $("tankValue"),
+  tankBar: $("tankBar"),
+  tankNote: $("tankNote"),
+
+  ai: $("aiRecommendation"),
+  weatherDecision: $("weatherDecision"),
+  finalAction: $("finalAction"),
+  reason: $("reasonText"),
+
+  light: $("lightValue"),
+  drop: $("dropRateValue"),
+  time: $("timeSinceValue"),
+  safety: $("safetyValue")
+
 };
 
-// ------------------------------------------------------------------------
-// Formatting helpers
-// ------------------------------------------------------------------------
 
-function formatNumber(value, decimals = 1) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "--";
-  return value.toFixed(decimals);
+// ============================================================
+// RUNTIME STATE
+// ============================================================
+
+let hasData = false;
+
+let lastUpdated = null;
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function num(value, fallback = null) {
+
+  const n = Number(value);
+
+  return Number.isFinite(n)
+    ? n
+    : fallback;
 }
 
-// The backend's time_since_irrigation field is recorded in MINUTES since the
-// last watering cycle (confirmed against the training dataset, where this
-// value increments in step with 3-minute sensor intervals). Before any
-// irrigation has ever been recorded, the field can be negative — we surface
-// that plainly rather than inventing a fake duration.
-function formatTimeSinceIrrigation(minutes) {
-  if (typeof minutes !== "number" || Number.isNaN(minutes)) return "--";
-  if (minutes < 0) return "No irrigation recorded yet";
-  if (minutes < 60) return `${Math.round(minutes)} min ago`;
-  const hours = Math.floor(minutes / 60);
-  const rem = Math.round(minutes % 60);
-  return `${hours}h ${rem}m ago`;
+
+function clamp(value, min, max) {
+
+  return Math.min(
+    Math.max(value, min),
+    max
+  );
+
 }
 
-function classifyTankLevel(level) {
-  if (level < TANK_CRITICAL_THRESHOLD) return "critical";
-  if (level < TANK_LOW_THRESHOLD) return "low";
-  return "normal";
-}
 
-function secondsAgoLabel(date) {
-  if (!date) return "Waiting for first reading…";
-  const secs = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
-  if (secs < 2) return "Last updated: just now";
-  if (secs < 60) return `Last updated: ${secs} seconds ago`;
-  const mins = Math.floor(secs / 60);
-  return `Last updated: ${mins} min ago`;
-}
+function setText(node, value) {
 
-// ------------------------------------------------------------------------
-// Rendering
-// ------------------------------------------------------------------------
+  if (node) {
 
-function setConnectionState(state) {
-  el.connPill.dataset.state = state; // "loading" | "online" | "offline"
-  if (state === "online") {
-    el.connLabel.textContent = "SYSTEM ONLINE";
-  } else if (state === "offline") {
-    el.connLabel.textContent = "SYSTEM OFFLINE";
-  } else {
-    el.connLabel.textContent = "CONNECTING…";
+    node.textContent = value;
+
   }
+
 }
+
+
+function formatTimeSince(minutes) {
+
+  if (minutes == null) {
+
+    return "--";
+
+  }
+
+  if (minutes < 60) {
+
+    return `${Math.round(minutes)} min`;
+
+  }
+
+  return `${Math.floor(minutes / 60)}h ${
+    Math.round(minutes % 60)
+  }m`;
+
+}
+
+
+function setTag(
+  node,
+  text,
+  tone = "neutral"
+) {
+
+  if (!node) return;
+
+  node.textContent = text;
+
+  node.className =
+    `tag ${tone}`;
+
+}
+
+
+// ============================================================
+// CONNECTION
+// ============================================================
+
+function connection(state) {
+
+  if (!el.connPill) return;
+
+  el.connPill.dataset.state =
+    state;
+
+  if (state === "online") {
+
+    setText(
+      el.connLabel,
+      "SYSTEM ONLINE"
+    );
+
+  }
+
+  else if (state === "offline") {
+
+    setText(
+      el.connLabel,
+      "SYSTEM OFFLINE"
+    );
+
+  }
+
+  else {
+
+    setText(
+      el.connLabel,
+      "CONNECTING"
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// SOIL DESCRIPTION
+// ============================================================
+
+function soilLabel(value) {
+
+  if (value < 20) {
+
+    return "Critically dry";
+
+  }
+
+  if (value < 40) {
+
+    return "Dry";
+
+  }
+
+  if (value <= 70) {
+
+    return "Optimal range";
+
+  }
+
+  return "Moist / wet";
+
+}
+
+
+// ============================================================
+// WEATHER ICON
+// ============================================================
+
+function weatherIcon(code) {
+
+  if (code == null) {
+
+    return "☁";
+
+  }
+
+  if (code >= 95) {
+
+    return "⛈";
+
+  }
+
+  if (code >= 80) {
+
+    return "🌦";
+
+  }
+
+  if (code >= 61) {
+
+    return "🌧";
+
+  }
+
+  if (code >= 51) {
+
+    return "🌦";
+
+  }
+
+  if (code >= 45) {
+
+    return "☁";
+
+  }
+
+  if (code >= 1) {
+
+    return "🌤";
+
+  }
+
+  return "☀";
+
+}
+
+
+// ============================================================
+// DASHBOARD RENDER
+// ============================================================
 
 function renderDashboard(data) {
-  // --- Pump status (the primary operational indicator) ---
-  const pumpOn = data.pump_status === "ON";
-  el.pumpPanel.dataset.status = pumpOn ? "on" : "off";
-  el.pumpStateText.textContent = pumpOn ? "🟢 PUMP ON" : "⚫ PUMP OFF";
-  el.pumpSubText.textContent = pumpOn
-    ? "Irrigation is actively running."
-    : "Irrigation is currently inactive.";
 
-  // --- Soil moisture ring ---
-  const soil = Math.max(0, Math.min(100, data.soil_moisture));
-  const offset = RING_CIRCUMFERENCE * (1 - soil / 100);
-  el.soilRing.style.strokeDashoffset = offset;
-  el.soilValue.textContent = formatNumber(data.soil_moisture, 1);
+  if (
+    !data ||
+    typeof data !== "object"
+  ) {
 
-  // --- Temperature ---
-  el.tempValue.textContent = formatNumber(data.temperature, 1);
-  const tempPct = Math.max(
-    0,
-    Math.min(100, ((data.temperature - TEMP_GAUGE_MIN) / (TEMP_GAUGE_MAX - TEMP_GAUGE_MIN)) * 100)
-  );
-  el.tempGaugeFill.style.width = `${tempPct}%`;
-  el.tempGaugeMarker.style.left = `${tempPct}%`;
+    return;
 
-  // --- Humidity ---
-  el.humidityValue.textContent = formatNumber(data.humidity, 1);
-  const humidityPct = Math.max(0, Math.min(100, data.humidity));
-  el.humidityGaugeFill.style.width = `${humidityPct}%`;
-  el.humidityGaugeMarker.style.left = `${humidityPct}%`;
-
-  // --- Water reservoir ---
-  const tankLevel = Math.max(0, Math.min(100, data.water_tank_level));
-  const tankTier = classifyTankLevel(data.water_tank_level);
-  el.tankCard.dataset.level = tankTier;
-  el.tankFill.style.height = `${tankLevel}%`;
-  el.tankValue.textContent = formatNumber(data.water_tank_level, 1);
-  el.tankNote.textContent =
-    tankTier === "critical"
-      ? "Critical — below safety threshold"
-      : tankTier === "low"
-      ? "Running low"
-      : "Reservoir healthy";
-
-  // --- AI recommendation ---
-  const irrigationNeeded = data.ml_recommendation === 1;
-  el.aiRecChip.textContent = irrigationNeeded
-    ? "1 — Irrigation Needed"
-    : "0 — Irrigation Not Needed";
-  el.aiRecChip.dataset.tone = irrigationNeeded ? "positive" : "neutral";
-
-  // --- System action ---
-  el.actionChip.textContent = pumpOn ? "Pump ON" : "Pump OFF";
-  el.actionChip.dataset.tone = pumpOn ? "on" : "off";
-
-  // --- Reason ---
-  el.reasonText.textContent = data.override_reason || "—";
-  el.reasonText.dataset.tone = data.safety_override ? "critical" : "normal";
-
-  // --- Safety alert vs. normal indicator ---
-  if (data.safety_override) {
-    el.safetyAlert.hidden = false;
-    el.safetyNormal.hidden = true;
-    el.safetyReasonText.textContent = data.override_reason || "Safety override active";
-  } else {
-    el.safetyAlert.hidden = true;
-    el.safetyNormal.hidden = false;
   }
 
-  // --- Secondary sensors ---
-  const lightPct = Math.max(0, Math.min(100, (data.light / LIGHT_MAX) * 100));
-  el.lightBar.style.width = `${lightPct}%`;
-  el.lightValue.textContent = `${data.light}`;
 
-  const dropRate = data.moisture_drop_rate;
-  const dropSign = dropRate > 0 ? "+" : "";
-  el.dropRateValue.textContent = `${dropSign}${formatNumber(dropRate, 3)}`;
+  hasData = true;
 
-  el.timeSinceValue.textContent = formatTimeSinceIrrigation(data.time_since_irrigation);
+  el.loading.hidden = true;
+
+  el.offline.hidden = true;
+
+  connection("online");
+
+  lastUpdated = new Date();
+
+
+  // ----------------------------------------------------------
+  // PUMP
+  // ----------------------------------------------------------
+
+  const pump =
+    String(
+      data.pump_status ??
+      data.pump_command ??
+      "OFF"
+    ).toUpperCase() === "ON";
+
+
+  // ----------------------------------------------------------
+  // ML
+  // ----------------------------------------------------------
+
+  const ml =
+    num(
+      data.ml_recommendation ??
+      data.ml_prediction,
+      0
+    ) === 1;
+
+
+  // ----------------------------------------------------------
+  // SAFETY
+  // ----------------------------------------------------------
+
+  const safety =
+    data.safety_override === true;
+
+
+  // ----------------------------------------------------------
+  // WEATHER OVERRIDE
+  // ----------------------------------------------------------
+
+  const weatherOverride =
+    data.weather_override === true;
+
+
+  // ----------------------------------------------------------
+  // WEATHER
+  // ----------------------------------------------------------
+
+  const rainProb =
+    num(
+      data.rain_probability,
+      0
+    );
+
+
+  const rainAmount =
+    num(
+      data.rain_amount,
+      0
+    );
+
+
+  // ----------------------------------------------------------
+  // WATER TANK
+  // ----------------------------------------------------------
+
+  const tank =
+    clamp(
+      num(
+        data.water_tank_level ??
+        data.water_level,
+        0
+      ),
+      0,
+      100
+    );
+
+
+  // ----------------------------------------------------------
+  // BACKEND REASON
+  // ----------------------------------------------------------
+
+  const reason =
+    data.override_reason ??
+    data.reason ??
+    "No decision reason available";
+
+
+  // ==========================================================
+  // DETERMINE HERO STATE
+  // ==========================================================
+
+  let state = "standby";
+
+
+  if (safety) {
+
+    state = "safety";
+
+  }
+
+  else if (weatherOverride) {
+
+    state = "weather";
+
+  }
+
+  else if (pump) {
+
+    state = "active";
+
+  }
+
+
+  el.hero.dataset.state =
+    state;
+
+
+  el.pumpOrb.dataset.state =
+    pump
+      ? "on"
+      : "off";
+
+
+  // ==========================================================
+  // HERO CONTENT
+  // ==========================================================
+
+  if (safety) {
+
+    setText(
+      el.title,
+      "Irrigation locked for safety"
+    );
+
+    setText(
+      el.description,
+      "The AI requested irrigation, but the reservoir is below the safe operating threshold."
+    );
+
+    setText(
+      el.mark,
+      "!"
+    );
+
+  }
+
+  else if (weatherOverride) {
+
+    setText(
+      el.title,
+      "Irrigation postponed"
+    );
+
+    setText(
+      el.description,
+      "Rain is expected soon, so the system is conserving water instead of starting a watering cycle."
+    );
+
+    setText(
+      el.mark,
+      "☂"
+    );
+
+  }
+
+  else if (pump) {
+
+    setText(
+      el.title,
+      "Irrigation active"
+    );
+
+    setText(
+      el.description,
+      "The AI recommends watering and no immediate weather or safety condition is blocking the cycle."
+    );
+
+    setText(
+      el.mark,
+      "⌁"
+    );
+
+  }
+
+  else {
+
+    setText(
+      el.title,
+      "Irrigation not required"
+    );
+
+    setText(
+      el.description,
+      "Current field conditions do not require the pump to run."
+    );
+
+    setText(
+      el.mark,
+      "✓"
+    );
+
+  }
+
+
+  // ==========================================================
+  // DECISION TAGS
+  // ==========================================================
+
+  setTag(
+    el.mlTag,
+
+    ml
+      ? "AI · Irrigation needed"
+      : "AI · No irrigation",
+
+    ml
+      ? "positive"
+      : "neutral"
+  );
+
+
+  setTag(
+    el.weatherTag,
+
+    weatherOverride
+      ? `Rain · ${rainProb}%`
+      : `Weather · ${rainProb}%`,
+
+    weatherOverride
+      ? "warning"
+      : "neutral"
+  );
+
+
+  setTag(
+
+    el.tankTag,
+
+    tank < 15
+      ? "Tank · Critical"
+      : tank < 35
+        ? "Tank · Low"
+        : "Tank · Healthy",
+
+    tank < 15
+      ? "danger"
+      : tank < 35
+        ? "warning"
+        : "positive"
+
+  );
+
+
+  // ==========================================================
+  // PUMP CARD
+  // ==========================================================
+
+  setText(
+    el.pumpStatus,
+    pump
+      ? "Running"
+      : "Standby"
+  );
+
+
+  setText(
+
+    el.pumpSub,
+
+    pump
+      ? "Pump command is ON"
+
+      : safety
+        ? "Blocked by tank safety"
+
+        : weatherOverride
+          ? "Waiting for safer weather window"
+
+          : "No watering cycle active"
+
+  );
+
+
+  setText(
+    el.pumpCommand,
+    pump
+      ? "ON"
+      : "OFF"
+  );
+
+
+  setText(
+
+    el.overrideState,
+
+    safety
+      ? "Safety"
+      : weatherOverride
+        ? "Weather"
+        : "None"
+
+  );
+
+
+  // ==========================================================
+  // SOIL
+  // ==========================================================
+
+  const soil =
+    num(data.soil_moisture);
+
+
+  if (soil != null) {
+
+    setText(
+      el.soil,
+      soil.toFixed(1)
+    );
+
+    el.soilBar.style.width =
+      `${clamp(soil, 0, 100)}%`;
+
+    setText(
+      el.soilNote,
+      soilLabel(soil)
+    );
+
+  }
+
+
+  // ==========================================================
+  // TEMPERATURE
+  // ==========================================================
+
+  const temperature =
+    num(data.temperature);
+
+
+  if (temperature != null) {
+
+    setText(
+      el.temp,
+      temperature.toFixed(1)
+    );
+
+    const percentage =
+      clamp(
+        ((temperature - 15) / 30) * 100,
+        0,
+        100
+      );
+
+    el.tempBar.style.width =
+      `${percentage}%`;
+
+  }
+
+
+  // ==========================================================
+  // HUMIDITY
+  // ==========================================================
+
+  const humidity =
+    num(data.humidity);
+
+
+  if (humidity != null) {
+
+    setText(
+      el.humidity,
+      humidity.toFixed(1)
+    );
+
+    el.humidityBar.style.width =
+      `${clamp(humidity, 0, 100)}%`;
+
+  }
+
+
+  // ==========================================================
+  // WATER TANK
+  // ==========================================================
+
+  setText(
+    el.tank,
+    tank.toFixed(1)
+  );
+
+  el.tankBar.style.width =
+    `${tank}%`;
+
+
+  setText(
+
+    el.tankNote,
+
+    tank < 15
+
+      ? "Critical — pump protection active"
+
+      : tank < 35
+        ? "Running low"
+        : "Reservoir healthy"
+
+  );
+
+
+  // ==========================================================
+  // DECISION TRACE
+  // ==========================================================
+
+  setText(
+
+    el.ai,
+
+    ml
+      ? "Irrigation needed"
+      : "Irrigation not needed"
+
+  );
+
+
+  setText(
+
+    el.weatherDecision,
+
+    weatherOverride
+      ? `Postponed · ${rainProb}% rain`
+      : `Clear gate · ${rainProb}% rain`
+
+  );
+
+
+  setText(
+
+    el.finalAction,
+
+    pump
+      ? "Pump ON"
+      : "Pump OFF"
+
+  );
+
+
+  setText(
+    el.reason,
+    reason
+  );
+
+
+  // ==========================================================
+  // SECONDARY CONTEXT
+  // ==========================================================
+
+  setText(
+
+    el.light,
+
+    data.light == null
+      ? "--"
+      : Math.round(
+          Number(data.light)
+        )
+
+  );
+
+
+  const drop =
+    num(
+      data.moisture_drop_rate
+    );
+
+
+  setText(
+
+    el.drop,
+
+    drop == null
+      ? "--"
+      : `${drop > 0 ? "+" : ""}${drop.toFixed(3)}`
+
+  );
+
+
+  setText(
+
+    el.time,
+
+    formatTimeSince(
+      num(
+        data.time_since_irrigation
+      )
+    )
+
+  );
+
+
+  setText(
+
+    el.safety,
+
+    safety
+      ? "ACTIVE"
+      : "Normal"
+
+  );
+
 }
 
-function showLoadingState(isLoading) {
-  el.loadingBanner.hidden = !isLoading;
+
+// ============================================================
+// WEATHER RENDER
+// ============================================================
+
+function renderWeather(data) {
+
+  if (!data?.hourly) {
+
+    return;
+
+  }
+
+
+  const hourly =
+    data.hourly;
+
+
+  const times =
+    hourly.time || [];
+
+
+  const probabilities =
+    hourly.precipitation_probability || [];
+
+
+  const rain =
+    hourly.rain || [];
+
+
+  const codes =
+    hourly.weather_code || [];
+
+
+  const probability =
+    num(
+      probabilities[0],
+      0
+    );
+
+
+  const rainAmount =
+    num(
+      rain[0],
+      0
+    );
+
+
+  // ==========================================================
+  // CURRENT WEATHER
+  // ==========================================================
+
+  setText(
+    el.rainProbability,
+    `${Math.round(probability)}%`
+  );
+
+
+  setText(
+    el.rainAmount,
+    `${rainAmount.toFixed(1)} mm`
+  );
+
+
+  setText(
+    el.weatherIcon,
+    weatherIcon(codes[0])
+  );
+
+
+  if (
+    probability >= 60 &&
+    rainAmount >= 0.1
+  ) {
+
+    setText(
+      el.weatherHeadline,
+      "Rain expected soon"
+    );
+
+  }
+
+  else {
+
+    setText(
+      el.weatherHeadline,
+      "No significant rain expected"
+    );
+
+  }
+
+
+  setText(
+
+    el.weatherDetail,
+
+    `${Math.round(probability)}% probability · ${rainAmount.toFixed(1)} mm in the immediate forecast hour`
+
+  );
+
+
+  // ==========================================================
+  // FORECAST STRIP
+  // ==========================================================
+
+  el.forecastStrip.innerHTML = "";
+
+
+  times
+    .slice(0, 6)
+    .forEach(
+      (time, index) => {
+
+        const date =
+          new Date(time);
+
+
+        const hour =
+          date.toLocaleTimeString(
+            [],
+            {
+              hour: "2-digit",
+              minute: "2-digit"
+            }
+          );
+
+
+        const probabilityValue =
+          num(
+            probabilities[index],
+            0
+          );
+
+
+        const rainValue =
+          num(
+            rain[index],
+            0
+          );
+
+
+        const item =
+          document.createElement(
+            "div"
+          );
+
+
+        item.className =
+          "forecast-item";
+
+
+        item.innerHTML = `
+
+          <span>${hour}</span>
+
+          <b>
+            ${Math.round(
+              probabilityValue
+            )}%
+          </b>
+
+          <small>
+            ${rainValue.toFixed(1)} mm
+          </small>
+
+        `;
+
+
+        el.forecastStrip
+          .appendChild(item);
+
+      }
+    );
+
 }
 
-function showOfflineWarning(isOffline) {
-  el.offlineBanner.hidden = !isOffline;
-}
 
-// ------------------------------------------------------------------------
-// Polling loop
-// ------------------------------------------------------------------------
+// ============================================================
+// FETCH DASHBOARD
+// ============================================================
 
-async function fetchDashboardData() {
+async function fetchDashboard() {
+
   try {
-    const response = await fetch(API_URL, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
 
-    setConnectionState("online");
-    showOfflineWarning(false);
+    const response =
+      await fetch(
+        `${DASHBOARD_API}?t=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
     renderDashboard(data);
 
-    hasReceivedFirstReading = true;
-    lastSuccessfulFetchAt = new Date();
-    showLoadingState(false);
-  } catch (err) {
-    setConnectionState("offline");
-    // Only show the "unable to connect" warning once we've actually tried;
-    // keep whatever values were last rendered on screen.
-    if (hasReceivedFirstReading) {
-      showOfflineWarning(true);
-    }
   }
+
+  catch (error) {
+
+    console.error(
+      "Dashboard API error:",
+      error
+    );
+
+
+    connection("offline");
+
+
+    if (hasData) {
+
+      el.offline.hidden =
+        false;
+
+    }
+
+  }
+
 }
 
-function tickLastUpdatedLabel() {
-  el.lastUpdated.textContent = secondsAgoLabel(lastSuccessfulFetchAt);
+
+// ============================================================
+// FETCH WEATHER
+// ============================================================
+
+async function fetchWeather() {
+
+  try {
+
+    const response =
+      await fetch(
+        `${WEATHER_API}?t=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    renderWeather(data);
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Weather API error:",
+      error
+    );
+
+
+    setText(
+      el.weatherHeadline,
+      "Weather unavailable"
+    );
+
+
+    setText(
+      el.weatherDetail,
+      "The dashboard will continue using the backend decision state."
+    );
+
+  }
+
 }
 
-// Initial state
-setConnectionState("loading");
-showLoadingState(true);
 
-// Kick off polling immediately, then every 3 seconds.
-fetchDashboardData();
-setInterval(fetchDashboardData, POLL_INTERVAL_MS);
+// ============================================================
+// LAST UPDATED
+// ============================================================
 
-// Update the "last updated Xs ago" label every second, independent of fetches.
-setInterval(tickLastUpdatedLabel, 1000);
+function tick() {
+
+  if (!el.lastUpdated) {
+
+    return;
+
+  }
+
+
+  if (!lastUpdated) {
+
+    el.lastUpdated.textContent =
+      "Waiting for first reading…";
+
+    return;
+
+  }
+
+
+  const seconds =
+    Math.max(
+      0,
+      Math.round(
+        (
+          Date.now() -
+          lastUpdated.getTime()
+        ) / 1000
+      )
+    );
+
+
+  el.lastUpdated.textContent =
+    `Last updated: ${seconds}s ago`;
+
+}
+
+
+// ============================================================
+// INITIALIZE
+// ============================================================
+
+connection("loading");
+
+el.loading.hidden = false;
+
+fetchDashboard();
+
+fetchWeather();
+
+
+// Dashboard every 3 seconds
+
+setInterval(
+  fetchDashboard,
+  POLL_MS
+);
+
+
+// Weather every 10 minutes
+
+setInterval(
+  fetchWeather,
+  WEATHER_POLL_MS
+);
+
+
+// Update timestamp every second
+
+setInterval(
+  tick,
+  1000
+);
