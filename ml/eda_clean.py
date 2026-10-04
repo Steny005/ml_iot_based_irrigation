@@ -9,7 +9,7 @@ dataset_dir = os.path.join(BASE_DIR, "dataset")
 # Ensure dataset directory exists
 os.makedirs(dataset_dir, exist_ok=True)
 
-raw_data_path = os.path.join(dataset_dir, "D:\projects\irrigation\dataset\dataset_day1to6_completed (1).csv")
+raw_data_path = os.path.join(dataset_dir, "dataset_day1to6_completed (1).csv")
 output_path = os.path.join(dataset_dir, "cleaned_dataset.csv")
 
 # 1. Load raw dataset
