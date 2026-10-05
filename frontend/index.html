@@ -1,606 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Smart Irrigation Control Center</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-    rel="stylesheet"
-  />
-
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Irrigation</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header class="topbar">
-
-  <div class="topbar-inner">
-
-    <div class="brand">
-      <div class="brand-icon">⌁</div>
-
-      <div>
-        <h1>Smart Irrigation</h1>
-        <p>AI-assisted field control center</p>
-      </div>
-    </div>
-
-    <div class="top-status">
-
-      <span class="status-pill" id="connPill">
-        <i id="connDot"></i>
-        <span id="connLabel">CONNECTING</span>
-      </span>
-
-      <span id="lastUpdated">
-        Waiting for first reading…
-      </span>
-
-    </div>
-
+<header>
+  <div>
+    <h1>Smart Irrigation</h1>
+    <p>AI-assisted field control center</p>
   </div>
 
-  <div class="meta-row">
-    <span>FIELD NODE 01</span>
-    <b>/</b>
-    <span>ESP32</span>
-    <b>/</b>
-    <span>RANDOM FOREST</span>
-    <b>/</b>
-    <span>WEATHER GATE</span>
+  <div class="status">
+    <span id="connDot"></span>
+    <span id="connLabel">Connecting</span>
   </div>
-
 </header>
 
+<main>
 
-<main class="dashboard">
-
-  <!-- Loading -->
-
-  <div class="banner loading" id="loadingBanner">
-
-    <span class="spinner"></span>
-
-    <div>
-      <strong>Connecting to field controller</strong>
-
-      <small>
-        Waiting for the first live telemetry packet.
-      </small>
-    </div>
-
+  <div id="offlineBanner" class="banner">
+    Connecting to field controller...
   </div>
 
+  <!-- MAIN DECISION -->
+  <section class="hero">
+    <small>AUTOMATED IRRIGATION DECISION</small>
 
-  <!-- Offline -->
+    <h2 id="decisionTitle">Checking conditions...</h2>
 
-  <div class="banner offline" id="offlineBanner" hidden>
-    Backend connection lost — showing the last known state.
-  </div>
+    <p id="decisionDescription">
+      Waiting for live field data.
+    </p>
+
+    <div class="tags">
+      <span id="mlTag">AI: Checking</span>
+      <span id="weatherTag">Weather: Checking</span>
+    </div>
+  </section>
 
 
-  <!-- ================= DECISION HERO ================= -->
+  <!-- WEATHER -->
+  <section class="card weather-card">
 
-  <section
-    class="decision-hero"
-    id="decisionHero"
-    data-state="waiting"
-    aria-live="polite"
-  >
+    <div class="section-title">
+      <span>FORECAST</span>
+      <h3>Weather & Irrigation Window</h3>
+    </div>
 
-    <div class="decision-copy">
+    <div class="weather-main">
+      <div>
+        <h2 id="weatherHeadline">Checking weather...</h2>
+        <p id="weatherDetail">Waiting for forecast data.</p>
+      </div>
+    </div>
 
-      <div class="eyebrow">
-        <span class="eyebrow-dot"></span>
-        AUTOMATED IRRIGATION DECISION
+    <div class="weather-stats">
+
+      <div>
+        <small>Rain Probability</small>
+        <strong id="rainProbability">--</strong>
       </div>
 
-      <h2 id="decisionTitle">
-        Waiting for live data
-      </h2>
+      <div>
+        <small>Rain Amount</small>
+        <strong id="rainAmount">--</strong>
+      </div>
 
-      <p id="decisionDescription">
-        The controller will combine soil conditions, the ML recommendation,
-        reservoir safety and the weather forecast.
-      </p>
-
-
-      <div class="decision-tags">
-
-        <span id="mlTag" class="tag neutral">
-          AI — --
-        </span>
-
-        <span id="weatherTag" class="tag neutral">
-          Weather — --
-        </span>
-
-        <span id="tankTag" class="tag neutral">
-          Tank — --
-        </span>
-
+      <div>
+        <small>Next Hour</small>
+        <strong id="nextRain">--</strong>
       </div>
 
     </div>
 
+    <div id="forecastStrip" class="forecast"></div>
 
-    <div class="decision-mark" id="decisionMark">
-      <span>⌁</span>
+  </section>
+
+
+  <!-- LIVE TELEMETRY -->
+  <section>
+
+    <div class="section-title">
+      <span>LIVE TELEMETRY</span>
+      <h3>Field Conditions</h3>
     </div>
 
-  </section>
-
-
-  <!-- ================= MAIN GRID ================= -->
-
-  <section class="main-grid">
-
-
-    <!-- PUMP -->
-
-    <article class="panel pump-card">
-
-      <div class="panel-head">
-
-        <div>
-          <span class="section-kicker">
-            EQUIPMENT
-          </span>
-
-          <h3>
-            Irrigation Pump
-          </h3>
-        </div>
-
-        <span class="auto-badge">
-          AUTO
-        </span>
-
-      </div>
-
-
-      <div class="pump-status-row">
-
-        <div class="pump-orb" id="pumpOrb">
-          <span>●</span>
-        </div>
-
-        <div>
-
-          <div
-            class="pump-status-text"
-            id="pumpStatusText"
-          >
-            Standby
-          </div>
-
-          <div
-            class="muted"
-            id="pumpSubText"
-          >
-            Waiting for system data
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="pump-facts">
-
-        <div>
-          <span>Command</span>
-          <strong id="pumpCommand">--</strong>
-        </div>
-
-        <div>
-          <span>Control</span>
-          <strong>Backend</strong>
-        </div>
-
-        <div>
-          <span>Override</span>
-          <strong id="overrideState">None</strong>
-        </div>
-
-      </div>
-
-    </article>
-
-
-    <!-- WEATHER -->
-
-    <article class="panel weather-card">
-
-      <div class="panel-head">
-
-        <div>
-
-          <span class="section-kicker">
-            FORECAST
-          </span>
-
-          <h3>
-            Weather &amp; Irrigation Window
-          </h3>
-
-        </div>
-
-        <span class="weather-location">
-          Saintgits field
-        </span>
-
-      </div>
-
-
-      <div class="weather-current">
-
-        <div
-          class="weather-icon"
-          id="weatherIcon"
-        >
-          ☁
-        </div>
-
-        <div>
-
-          <strong id="weatherHeadline">
-            Forecast unavailable
-          </strong>
-
-          <p id="weatherDetail">
-            Waiting for weather data…
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="weather-stats">
-
-        <div>
-          <span>Next hour rain</span>
-          <strong id="rainProbability">
-            --%
-          </strong>
-        </div>
-
-        <div>
-          <span>Expected rain</span>
-          <strong id="rainAmount">
-            -- mm
-          </strong>
-        </div>
-
-        <div>
-          <span>Decision window</span>
-          <strong>
-            1 hour
-          </strong>
-        </div>
-
-      </div>
-
-
-      <div
-        class="forecast-strip"
-        id="forecastStrip"
-      ></div>
-
-    </article>
-
-  </section>
-
-
-  <!-- ================= TELEMETRY TITLE ================= -->
-
-  <section class="section-title">
-
-    <div>
-
-      <span class="section-kicker">
-        LIVE TELEMETRY
-      </span>
-
-      <h2>
-        Field conditions
-      </h2>
-
-    </div>
-
-    <span class="live-indicator">
-      <i></i>
-      Live · 3s
-    </span>
-
-  </section>
-
-
-  <!-- ================= TELEMETRY ================= -->
-
-  <section class="telemetry-grid">
-
-
-    <!-- SOIL -->
-
-    <article class="metric-card soil-card">
-
-      <div class="metric-top">
-        <span>Soil moisture</span>
-        <b>PRIMARY</b>
-      </div>
-
-      <div class="metric-value">
-
-        <strong id="soilValue">
-          --
-        </strong>
-
+    <div class="telemetry-grid">
+
+      <div class="card metric">
+        <small>SOIL MOISTURE</small>
+        <strong id="soilValue">--</strong>
         <span>%</span>
-
       </div>
 
-      <div class="progress">
-        <i id="soilBar"></i>
-      </div>
-
-      <p id="soilNote">
-        Waiting for reading
-      </p>
-
-    </article>
-
-
-    <!-- TEMPERATURE -->
-
-    <article class="metric-card">
-
-      <div class="metric-top">
-        <span>Temperature</span>
-        <b>ENVIRONMENT</b>
-      </div>
-
-      <div class="metric-value">
-
-        <strong id="tempValue">
-          --
-        </strong>
-
+      <div class="card metric">
+        <small>TEMPERATURE</small>
+        <strong id="tempValue">--</strong>
         <span>°C</span>
-
       </div>
 
-      <div class="progress amber">
-        <i id="tempBar"></i>
-      </div>
-
-      <p>
-        Air temperature
-      </p>
-
-    </article>
-
-
-    <!-- HUMIDITY -->
-
-    <article class="metric-card">
-
-      <div class="metric-top">
-        <span>Humidity</span>
-        <b>ENVIRONMENT</b>
-      </div>
-
-      <div class="metric-value">
-
-        <strong id="humidityValue">
-          --
-        </strong>
-
+      <div class="card metric">
+        <small>HUMIDITY</small>
+        <strong id="humidityValue">--</strong>
         <span>%</span>
-
       </div>
 
-      <div class="progress blue">
-        <i id="humidityBar"></i>
-      </div>
-
-      <p>
-        Relative humidity
-      </p>
-
-    </article>
-
-
-    <!-- TANK -->
-
-    <article class="metric-card tank-card">
-
-      <div class="metric-top">
-        <span>Water reservoir</span>
-        <b>SAFETY</b>
-      </div>
-
-      <div class="metric-value">
-
-        <strong id="tankValue">
-          --
-        </strong>
-
-        <span>%</span>
-
-      </div>
-
-      <div class="progress">
-        <i id="tankBar"></i>
-      </div>
-
-      <p id="tankNote">
-        Waiting for reading
-      </p>
-
-    </article>
-
-  </section>
-
-
-  <!-- ================= LOWER GRID ================= -->
-
-  <section class="lower-grid">
-
-
-    <!-- DECISION TRACE -->
-
-    <article class="panel diagnostics">
-
-      <div class="panel-head">
-
-        <div>
-
-          <span class="section-kicker">
-            DECISION TRACE
-          </span>
-
-          <h3>
-            Why this decision?
-          </h3>
-
-        </div>
-
-      </div>
-
-
-      <div class="trace">
-
-        <div class="trace-step">
-
-          <span>01</span>
-
-          <div>
-            <b>AI recommendation</b>
-            <strong id="aiRecommendation">
-              --
-            </strong>
-          </div>
-
-        </div>
-
-
-        <div class="trace-line"></div>
-
-
-        <div class="trace-step">
-
-          <span>02</span>
-
-          <div>
-            <b>Weather gate</b>
-            <strong id="weatherDecision">
-              --
-            </strong>
-          </div>
-
-        </div>
-
-
-        <div class="trace-line"></div>
-
-
-        <div class="trace-step">
-
-          <span>03</span>
-
-          <div>
-            <b>Final action</b>
-            <strong id="finalAction">
-              --
-            </strong>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="reason-box">
-
-        <span>
-          BACKEND REASON
-        </span>
-
-        <p id="reasonText">
-          Awaiting data…
-        </p>
-
-      </div>
-
-    </article>
-
-
-    <!-- SECONDARY CONTEXT -->
-
-    <article class="panel context-card">
-
-      <div class="panel-head">
-
-        <div>
-
-          <span class="section-kicker">
-            SECONDARY CONTEXT
-          </span>
-
-          <h3>
-            Field behaviour
-          </h3>
-
-        </div>
-
-      </div>
-
-
-      <div class="context-row">
-        <span>Light intensity</span>
+      <div class="card metric">
+        <small>LIGHT</small>
         <strong id="lightValue">--</strong>
       </div>
 
+    </div>
 
-      <div class="context-row">
-        <span>Moisture drop rate</span>
-        <strong id="dropRateValue">--</strong>
+  </section>
+
+
+  <!-- DECISION + FIELD BEHAVIOUR -->
+  <section class="bottom-grid">
+
+    <div class="card">
+
+      <div class="section-title">
+        <span>DECISION</span>
+        <h3>Why this decision?</h3>
       </div>
 
+      <div class="decision-grid">
 
-      <div class="context-row">
-        <span>Time since irrigation</span>
-        <strong id="timeSinceValue">--</strong>
+        <div>
+          <small>AI RECOMMENDATION</small>
+          <strong id="aiRecommendation">--</strong>
+        </div>
+
+        <div>
+          <small>WEATHER CONDITION</small>
+          <strong id="weatherDecision">--</strong>
+        </div>
+
+        <div>
+          <small>FINAL DECISION</small>
+          <strong id="finalDecision">--</strong>
+        </div>
+
       </div>
 
-
-      <div class="context-row">
-        <span>Safety override</span>
-        <strong id="safetyValue">--</strong>
+      <div class="reason">
+        <small>REASON</small>
+        <p id="reasonText">Waiting for data...</p>
       </div>
 
-    </article>
+    </div>
+
+
+    <div class="card">
+
+      <div class="section-title">
+        <span>FIELD BEHAVIOUR</span>
+        <h3>Current context</h3>
+      </div>
+
+      <div class="context">
+
+        <div>
+          <span>Light intensity</span>
+          <strong id="lightContext">--</strong>
+        </div>
+
+        <div>
+          <span>Moisture drop rate</span>
+          <strong id="dropRateValue">--</strong>
+        </div>
+
+        <div>
+          <span>Time since irrigation</span>
+          <strong id="timeSinceValue">--</strong>
+        </div>
+
+      </div>
+
+    </div>
 
   </section>
 
 </main>
 
-
 <footer>
-  Smart Irrigation Control Center ·
-  Automated backend decision engine ·
-  Monitoring interface
+  Smart Irrigation Control Center • AI-assisted irrigation monitoring
 </footer>
-
 
 <script src="script.js"></script>
 
