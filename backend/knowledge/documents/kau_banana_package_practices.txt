@@ -1,0 +1,31 @@
+TITLE: Kerala Agricultural University (KAU) - Package of Practices: Banana and Plantain (വാഴ)
+INSTITUTION: Kerala Agricultural University (KAU) & ICAR-National Research Centre for Banana (NRCB)
+DOCUMENT_TYPE: Official Crop Cultivation & Protection Package
+CROP: Banana / Plantain (വാഴ - Nendran, Robusta, Grand Naine)
+TOPIC: Banana Pest Management, Wilt Protection, and Soil Nutrition
+
+1. Banana Pseudostem Borer / Weevil (തണ്ടുതുരപ്പൻ വണ്ട് - Odoiporus longicollis)
+Symptoms: Small pinhead holes on the pseudostem oozing brownish or transparent jelly-like sap. Fiber inside is chewed into dark spongy mass by grubs, leading to premature snap and toppling of pseudo-stem during windy conditions.
+Management & Remedy:
+- Maintain field sanitation by removing dried outer leaf sheaths up to 5 months from planting.
+- Install banana pseudostem longitudinal split traps (50 cm lengths of freshly harvested pseudostem split in half and placed cut surface downward on soil with 5g chlorpyrifos or Beauveria bassiana dusting) @ 15-20 traps per acre.
+- Swab or spray pseudostem with Beauveria bassiana @ 20g/L or chlorpyrifos 20 EC @ 2.5 ml/L at 5th, 6th, and 7th month after planting.
+- Pour neem oil 3% with liquid dishwashing soap into leaf axils.
+Citation: KAU Package of Practices: Fruits (Banana Section 4.6), Kerala Agri Dept.
+
+2. Panama Wilt / Fusarium Vascular Wilt (വാട്ടരോഗം - Fusarium oxysporum f. sp. cubense)
+Symptoms: Yellowing of lower leaves around the petiole, longitudinal splitting of pseudostem base, and vascular discoloration (reddish-brown streaks inside corm when cut).
+Management & Remedy:
+- Use disease-free tissue culture plantlets or certified healthy sword suckers.
+- Sucker dipping (praline treatment): Dip peeled suckers in cow dung slurry mixed with Pseudomonas fluorescens @ 50g and Trichoderma viride @ 50g per sucker for 20 minutes before planting.
+- Apply 5 kg FYM enriched with 50g Trichoderma in each planting pit.
+- Ensure efficient drainage; avoid water stagnation around the corm zone.
+Citation: ICAR-NRCB Banana Health Manual & KAU Organic Protection Guidelines.
+
+3. Sigatoka Leaf Spot (ഇലപ്പുള്ളി രോഗം - Pseudocercospora musae)
+Symptoms: Small reddish-brown specks on the 3rd and 4th open leaves expanding into elliptical dark brown necrotic lesions with greyish center and bright yellow halo, leading to drying up of foliage.
+Management & Remedy:
+- Cut and destroy severely infected dried lower leaves and burn or bury away from plantation.
+- Spray Bordeaux mixture 1% or mancozeb 75% WP @ 2.5g/L or propiconazole @ 1 ml/L mixed with mineral oil or wetting agent at 20-25 days interval during monsoon.
+- Spray Pseudomonas fluorescens @ 20g per litre as preventive biological spray.
+Citation: KAU Package of Practices: Commercial Banana Cultivation.

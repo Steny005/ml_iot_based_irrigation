@@ -1,0 +1,29 @@
+TITLE: ICAR - Central Plantation Crops Research Institute (CPCRI) & KAU Coconut Care Guide
+INSTITUTION: ICAR-CPCRI Kasaragod & Kerala Agricultural University
+DOCUMENT_TYPE: Plantation Research Handbook & Advisory
+CROP: Coconut Palm (തെങ്ങ്)
+TOPIC: Palm Crown Protection, Weevil Control, and Basin Mulching
+
+1. Rhinoceros Beetle (കൊമ്പൻ ചെല്ലി - Oryctes rhinoceros)
+Symptoms: V-shaped or fan-shaped geometric geometrical cuts on emerged fronds; holes bored into crown spindle with chewed fibrous frass expelled at the entrance.
+Management & Remedy:
+- Hook out adult beetles from crown leaf axils using a pointed iron beetle hook during monthly harvest rounds.
+- Top crown filling: Fill the topmost three leaf axils around the tender spindle with a mixture of seived river sand and neem cake or marotti cake powder in 1:1 ratio (250g per palm) twice yearly (May and September before monsoon breaks).
+- Inoculate breeding manure heaps and compost pits with green muscardine entomopathogenic fungus Metarhizium anisopliae @ 5x10^11 spores per cubic meter to kill developing grubs naturally.
+Citation: ICAR-CPCRI Technical Bulletin No. 48 & KAU POP Coconut.
+
+2. Red Palm Weevil (ചെമ്പൻ ചെല്ലി - Rhynchophorus ferrugineus)
+Symptoms: Fatal crown insect pest. Grubs bore inside trunk tissue. Symptoms include longitudinal cracks in trunk with oozing viscous brown sap, chewed fibrous frass at leaf bases, gnawing sound inside trunk audible with ear pressed against trunk, and wilting/toppling of central spindle.
+Management & Remedy:
+- Never cut green leaves flush with trunk — leave at least 120 cm petiole stalk to prevent entry of female ovipositor.
+- Install pheromone lures (Ferrolure+) bucket traps @ 1 trap per 2 hectares with fresh cut pineapple or banana food bait to attract and trap adult weevils.
+- Trunk injection / crown application of imidacloprid 17.8 SL @ 1 ml per litre or neem seed kernel extract into infested holes followed by plastering with cement-clay paste.
+Citation: ICAR-CPCRI Palm Protection Protocol 2024.
+
+3. Coconut Basin Moisture Conservation & Mulching
+Symptoms: Premature nut fall (button shedding) and frond drooping during summer dry spells.
+Management & Remedy:
+- Apply organic mulch (dried coconut fronds, coconut husks arranged concave side up to capture dew, or chopped green leaves) in a 2-meter radius circular basin around the palm.
+- Sow cover crops such as Pueraria phaseoloides or Mucuna bracteata in palm alleys to protect soil from solar radiation and prevent soil baking.
+- Maintain micro-drip irrigation delivering 35-45 litres of water per palm per day during dry months.
+Citation: KAU Water Management in Plantation Crops & CPCRI Agronomy Bulletin.

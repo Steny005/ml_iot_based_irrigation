@@ -1,0 +1,31 @@
+TITLE: Kerala Agricultural University (KAU) - Package of Practices: Wetland Rice (Paddy)
+INSTITUTION: Kerala Agricultural University (KAU), Thrissur
+DOCUMENT_TYPE: Official Agricultural Advisory & Extension Manual
+CROP: Paddy / Rice (നെല്ല്)
+TOPIC: Integrated Pest and Disease Management in Rice
+
+1. Rice Yellow Stem Borer (തണ്ടുതുരപ്പൻ പുഴു - Scirpophaga incertulas)
+Symptoms: Larvae bore into the central leaf sheath and feed inside the stem. In the vegetative phase, this causes 'dead heart' (drying of the central shoot), and in the flowering phase, it produces 'white earhead' (empty whitish chaffy panicles).
+Management & Remedy:
+- Clip seedling leaf tips before transplanting to eliminate egg masses laid on leaf tips.
+- Install pheromone traps at 8-10 traps per acre for early monitoring and mass trapping of adult male moths.
+- Release egg parasitoid Trichogramma japonicum at 2 cc per acre starting from 30 days after transplanting (DAT) at weekly intervals.
+- If dead heart exceeds 10% threshold, apply cartap hydrochloride 50% SP @ 2g per litre of water or chlorantraniliprole 18.5% SC @ 0.3 ml per litre. Drain excess water prior to spraying.
+Citation: KAU Package of Practices Recommendations: Crops (Rice Chapter, Section 3.8.1).
+
+2. Rice Blast Disease (കുമിൾരോഗം / കുലവാട്ടം - Pyricularia oryzae)
+Symptoms: Spindle-shaped or eye-shaped lesions with ash-colored centers and dark brown borders on leaves. Neck blast causes blackened nodes and rotting of the panicle neck leading to lodging and blank grains.
+Management & Remedy:
+- Avoid excessive nitrogenous fertilizers (such as urea) which make leaf tissue succulent and vulnerable.
+- Treat seeds with Pseudomonas fluorescens @ 10g per kg seed before soaking and sowing.
+- Foliar spray Pseudomonas fluorescens @ 20g per litre or tricyclazole 75% WP @ 0.6g per litre of water at first appearance of spots or early panicle emergence.
+Citation: KAU Rice Disease Management Protocol 2024.
+
+3. Brown Plant Hopper (ചേനച്ചാഴി / തവിട്ടു ചാഴി - Nilaparvata lugens)
+Symptoms: Nymphs and adults congregate at the base of the plant above water level and suck phloem sap, leading to circular patches of drying called 'hopper burn'.
+Management & Remedy:
+- Form alleys (skipping every 8th to 10th row during transplanting) to allow light and air into the canopy.
+- Alternate wetting and drying (AWD) — draining water completely for 3-4 days forces hoppers to evacuate.
+- Avoid broad-spectrum synthetic pyrethroids which kill natural predators like mirid bugs and spiders.
+- If threshold exceeds 5-10 hoppers per hill, spray neem oil emulsion @ 2% or flonicamid 50% WG @ 0.3g/L directing spray towards the base of hills.
+Citation: Kerala Agriculture Department Plant Protection Advisory for Kuttanad & Palakkad.

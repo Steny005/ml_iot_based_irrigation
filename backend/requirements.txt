@@ -8,3 +8,4 @@ uvicorn
 pydantic
 joblib
 requests
+pypdf

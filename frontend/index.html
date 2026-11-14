@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Irrigation</title>
+  <title>Smart Irrigation & AI Agricultural Advisory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -12,14 +15,31 @@
 <header>
   <div>
     <h1>Smart Irrigation</h1>
-    <p>AI-assisted field control center</p>
+    <p>AI-assisted field control center & agricultural knowledge hub</p>
   </div>
 
-  <div class="status">
-    <span id="connDot"></span>
-    <span id="connLabel">Connecting</span>
+  <div class="header-right">
+    <div class="status">
+      <span id="connDot"></span>
+      <span id="connLabel">Connecting</span>
+    </div>
   </div>
 </header>
+
+<!-- TOP NAVIGATION TABS -->
+<nav class="app-nav">
+  <div class="nav-container">
+    <button id="navIrrigationBtn" class="nav-btn active" onclick="switchTab('irrigation')">
+      <span class="nav-icon">💧</span> Field Control & Sensors
+    </button>
+    <button id="navAdvisorBtn" class="nav-btn" onclick="switchTab('advisor')">
+      <span class="nav-icon">🌾</span> AI Agricultural Advisor
+    </button>
+    <button id="navFeedBtn" class="nav-btn" onclick="switchTab('feed')">
+      <span class="nav-icon">📰</span> Farmer Feed (കർഷക ഫീഡ്)
+    </button>
+  </div>
+</nav>
 
 <main>
 
@@ -27,171 +47,382 @@
     Connecting to field controller...
   </div>
 
-  <!-- MAIN DECISION -->
-  <section class="hero">
-    <small>AUTOMATED IRRIGATION DECISION</small>
+  <!-- ========================================================= -->
+  <!-- TAB 1: EXISTING SMART IRRIGATION DASHBOARD                 -->
+  <!-- ========================================================= -->
+  <div id="tabIrrigation" class="tab-content active">
 
-    <h2 id="decisionTitle">Checking conditions...</h2>
+    <!-- MAIN DECISION -->
+    <section class="hero">
+      <small>AUTOMATED IRRIGATION DECISION</small>
 
-    <p id="decisionDescription">
-      Waiting for live field data.
-    </p>
+      <h2 id="decisionTitle">Checking conditions...</h2>
 
-    <div class="tags">
-      <span id="mlTag">AI: Checking</span>
-      <span id="weatherTag">Weather: Checking</span>
-    </div>
-  </section>
+      <p id="decisionDescription">
+        Waiting for live field data.
+      </p>
 
-
-  <!-- WEATHER -->
-  <section class="card weather-card">
-
-    <div class="section-title">
-      <span>FORECAST</span>
-      <h3>Weather & Irrigation Window</h3>
-    </div>
-
-    <div class="weather-main">
-      <div>
-        <h2 id="weatherHeadline">Checking weather...</h2>
-        <p id="weatherDetail">Waiting for forecast data.</p>
+      <div class="tags">
+        <span id="mlTag">AI: Checking</span>
+        <span id="weatherTag">Weather: Checking</span>
       </div>
-    </div>
+    </section>
 
-    <div class="weather-stats">
-
-      <div>
-        <small>Rain Probability</small>
-        <strong id="rainProbability">--</strong>
-      </div>
-
-      <div>
-        <small>Rain Amount</small>
-        <strong id="rainAmount">--</strong>
-      </div>
-
-      <div>
-        <small>Next Hour</small>
-        <strong id="nextRain">--</strong>
-      </div>
-
-    </div>
-
-    <div id="forecastStrip" class="forecast"></div>
-
-  </section>
-
-
-  <!-- LIVE TELEMETRY -->
-  <section>
-
-    <div class="section-title">
-      <span>LIVE TELEMETRY</span>
-      <h3>Field Conditions</h3>
-    </div>
-
-    <div class="telemetry-grid">
-
-      <div class="card metric">
-        <small>SOIL MOISTURE</small>
-        <strong id="soilValue">--</strong>
-        <span>%</span>
-      </div>
-
-      <div class="card metric">
-        <small>TEMPERATURE</small>
-        <strong id="tempValue">--</strong>
-        <span>°C</span>
-      </div>
-
-      <div class="card metric">
-        <small>HUMIDITY</small>
-        <strong id="humidityValue">--</strong>
-        <span>%</span>
-      </div>
-
-      <div class="card metric">
-        <small>LIGHT</small>
-        <strong id="lightValue">--</strong>
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- DECISION + FIELD BEHAVIOUR -->
-  <section class="bottom-grid">
-
-    <div class="card">
-
+    <!-- WEATHER -->
+    <section class="card weather-card">
       <div class="section-title">
-        <span>DECISION</span>
-        <h3>Why this decision?</h3>
+        <span>FORECAST</span>
+        <h3>Weather & Irrigation Window</h3>
       </div>
 
-      <div class="decision-grid">
-
+      <div class="weather-main">
         <div>
-          <small>AI RECOMMENDATION</small>
-          <strong id="aiRecommendation">--</strong>
+          <h2 id="weatherHeadline">Checking weather...</h2>
+          <p id="weatherDetail">Waiting for forecast data.</p>
+        </div>
+      </div>
+
+      <div class="weather-stats">
+        <div>
+          <small>Rain Probability</small>
+          <strong id="rainProbability">--</strong>
         </div>
 
         <div>
-          <small>WEATHER CONDITION</small>
-          <strong id="weatherDecision">--</strong>
+          <small>Rain Amount</small>
+          <strong id="rainAmount">--</strong>
         </div>
 
         <div>
-          <small>FINAL DECISION</small>
-          <strong id="finalDecision">--</strong>
+          <small>Next Hour</small>
+          <strong id="nextRain">--</strong>
         </div>
-
       </div>
 
-      <div class="reason">
-        <small>REASON</small>
-        <p id="reasonText">Waiting for data...</p>
-      </div>
+      <div id="forecastStrip" class="forecast"></div>
+    </section>
 
-    </div>
-
-
-    <div class="card">
-
+    <!-- LIVE TELEMETRY -->
+    <section>
       <div class="section-title">
-        <span>FIELD BEHAVIOUR</span>
-        <h3>Current context</h3>
+        <span>LIVE TELEMETRY</span>
+        <h3>Field Conditions</h3>
       </div>
 
-      <div class="context">
-
-        <div>
-          <span>Light intensity</span>
-          <strong id="lightContext">--</strong>
+      <div class="telemetry-grid">
+        <div class="card metric">
+          <small>SOIL MOISTURE</small>
+          <strong id="soilValue">--</strong>
+          <span>%</span>
         </div>
 
-        <div>
-          <span>Moisture drop rate</span>
-          <strong id="dropRateValue">--</strong>
+        <div class="card metric">
+          <small>TEMPERATURE</small>
+          <strong id="tempValue">--</strong>
+          <span>°C</span>
         </div>
 
-        <div>
-          <span>Time since irrigation</span>
-          <strong id="timeSinceValue">--</strong>
+        <div class="card metric">
+          <small>HUMIDITY</small>
+          <strong id="humidityValue">--</strong>
+          <span>%</span>
         </div>
 
+        <div class="card metric">
+          <small>LIGHT</small>
+          <strong id="lightValue">--</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECISION + FIELD BEHAVIOUR -->
+    <section class="bottom-grid">
+      <div class="card">
+        <div class="section-title">
+          <span>DECISION</span>
+          <h3>Why this decision?</h3>
+        </div>
+
+        <div class="decision-grid">
+          <div>
+            <small>AI RECOMMENDATION</small>
+            <strong id="aiRecommendation">--</strong>
+          </div>
+
+          <div>
+            <small>WEATHER CONDITION</small>
+            <strong id="weatherDecision">--</strong>
+          </div>
+
+          <div>
+            <small>FINAL DECISION</small>
+            <strong id="finalDecision">--</strong>
+          </div>
+        </div>
+
+        <div class="reason">
+          <small>REASON</small>
+          <p id="reasonText">Waiting for data...</p>
+        </div>
       </div>
 
+      <div class="card">
+        <div class="section-title">
+          <span>FIELD BEHAVIOUR</span>
+          <h3>Current context</h3>
+        </div>
+
+        <div class="context">
+          <div>
+            <span>Light intensity</span>
+            <strong id="lightContext">--</strong>
+          </div>
+
+          <div>
+            <span>Moisture drop rate</span>
+            <strong id="dropRateValue">--</strong>
+          </div>
+
+          <div>
+            <span>Time since irrigation</span>
+            <strong id="timeSinceValue">--</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div> <!-- /tabIrrigation -->
+
+
+  <!-- ========================================================= -->
+  <!-- TAB 2: AI AGRICULTURAL ADVISOR                            -->
+  <!-- ========================================================= -->
+  <div id="tabAdvisor" class="tab-content">
+
+    <section class="hero hero-advisor">
+      <small>DECISION SUPPORT SYSTEM</small>
+      <h2>🌾 AI Agricultural Advisor</h2>
+      <p>Scientific fertilizer schedules and organic manure recipes tailored to your crop, growth stage, and local weather.</p>
+      
+      <div class="advisor-location-bar">
+        <div class="loc-chip">
+          <span>📍 Farm Coordinates:</span>
+          <strong id="advisorCoords">9.50996° N, 76.55067° E (Kerala)</strong>
+        </div>
+        <div class="loc-chip">
+          <span>🌦 Forecast Status:</span>
+          <strong id="advisorWeatherStatus">Loading forecast...</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADVISOR CONTROLS CARD -->
+    <section class="card advisor-controls-card">
+      <div class="section-title">
+        <span>SELECTION</span>
+        <h3>Crop & Farm Parameters</h3>
+      </div>
+
+      <div class="advisor-form-grid">
+        <div class="form-group">
+          <label for="advisorCropSelect">Select Crop (വിള തിരഞ്ഞെടുക്കുക):</label>
+          <select id="advisorCropSelect" onchange="onAdvisorCropChange()">
+            <option value="paddy">Paddy / Rice (നെല്ല്)</option>
+            <option value="banana">Banana / Plantain (വാഴ - Nendran/Robusta)</option>
+            <option value="coconut">Coconut (തെങ്ങ്)</option>
+            <option value="pepper">Black Pepper (കുരുമുളക്)</option>
+            <option value="vegetables">Vegetables / Okra / Brinjal (പച്ചക്കറികൾ)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="advisorStageSelect">Growth Stage (വളർച്ചാ ഘട്ടം):</label>
+          <select id="advisorStageSelect">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="form-group form-actions">
+          <button id="btnGetFertilizer" class="btn btn-primary" onclick="fetchFertilizerRecommendations()">
+            🔍 Get Fertilizer Schedule
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTIONAL SOIL EXPANDER -->
+      <details class="soil-details">
+        <summary>Soil Health & Test Context (Optional)</summary>
+        <div class="soil-grid">
+          <div>
+            <label for="soilPh">Soil pH (optional):</label>
+            <input type="number" id="soilPh" placeholder="e.g. 5.8" step="0.1" min="3" max="10">
+          </div>
+          <div>
+            <label for="soilType">Soil Texture:</label>
+            <select id="soilType">
+              <option value="laterite">Laterite Loam (Standard Kerala)</option>
+              <option value="clay">Clay / Wetland Alluvium</option>
+              <option value="sandy">Sandy / Coastal Loam</option>
+              <option value="red">Red Loam</option>
+            </select>
+          </div>
+        </div>
+        <small class="soil-hint">Note: If soil data is omitted, standard Kerala Agricultural University Package of Practices recommendations are applied.</small>
+      </details>
+    </section>
+
+    <!-- ADVISOR SUB-TABS -->
+    <div class="sub-nav-tabs">
+      <button id="subTabFertBtn" class="sub-tab-btn active" onclick="switchAdvisorSubTab('fertilizer')">
+        🧪 Location-Based Fertilizer Recommendations
+      </button>
+      <button id="subTabOrganicBtn" class="sub-tab-btn" onclick="switchAdvisorSubTab('organic')">
+        🌿 Organic Manure Recipe Generator
+      </button>
     </div>
 
-  </section>
+    <!-- SUB-TAB CONTENT: FERTILIZER RECOMMENDATIONS -->
+    <div id="subContentFertilizer" class="sub-content active">
+
+      <!-- WEATHER SAFETY ALERT BANNER -->
+      <div id="fertWeatherAlert" class="weather-alert-banner" style="display: none;">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- SOIL GUIDELINE BANNER -->
+      <div id="fertSoilNotice" class="soil-notice-banner">
+        General guideline mode: Calibrated with Kerala Agricultural University (KAU) Package of Practices.
+      </div>
+
+      <!-- RECOMMENDATION CARDS CONTAINER -->
+      <div id="fertilizerList" class="cards-stack">
+        <div class="empty-state">
+          Select your crop and growth stage above and click "Get Fertilizer Schedule" to view verified agricultural recommendations.
+        </div>
+      </div>
+
+      <!-- AI EXPLANATION BOX -->
+      <div id="aiExplanationBox" class="card ai-explanation-card" style="display:none;">
+        <div class="section-title">
+          <span>AI AGRONOMIC SUMMARY</span>
+          <h3 id="aiExplTitle">Expert Advisory</h3>
+        </div>
+        <div class="ai-body">
+          <p id="aiSummaryEn" class="summary-en"></p>
+          <div class="summary-ml-box">
+            <span class="lang-tag">മലയാളം സംഗ്രഹം</span>
+            <p id="aiSummaryMl" class="summary-ml"></p>
+          </div>
+          <div class="action-tips-block">
+            <strong>Practical Action Tips:</strong>
+            <ul id="aiActionTips"></ul>
+          </div>
+          <div class="safety-alert-inline">
+            <span class="alert-icon">⚠️</span>
+            <span id="aiSafetyAlert"></span>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- /subContentFertilizer -->
+
+    <!-- SUB-TAB CONTENT: ORGANIC MANURE RECIPE GENERATOR -->
+    <div id="subContentOrganic" class="sub-content">
+      <section class="card organic-config-card">
+        <div class="section-title">
+          <span>INPUT SELECTION</span>
+          <h3>Locally Available Farm Inputs</h3>
+        </div>
+        <p class="section-desc">Select the organic inputs available at your farm to formulate a balanced, scientifically viable manure combination:</p>
+
+        <div class="inputs-checklist">
+          <label class="check-item"><input type="checkbox" id="chkCowDung" value="cow_dung" checked> Decomposed Cow Dung / Slurry</label>
+          <label class="check-item"><input type="checkbox" id="chkVermicompost" value="vermicompost" checked> Vermicompost</label>
+          <label class="check-item"><input type="checkbox" id="chkNeemCake" value="neem_cake" checked> Neem Seed Cake</label>
+          <label class="check-item"><input type="checkbox" id="chkFym" value="farmyard_manure" checked> Farmyard Manure (FYM)</label>
+          <label class="check-item"><input type="checkbox" id="chkBoneMeal" value="bone_meal"> Steamed Bone Meal</label>
+          <label class="check-item"><input type="checkbox" id="chkWoodAsh" value="wood_ash"> Kitchen Wood Ash</label>
+          <label class="check-item"><input type="checkbox" id="chkPoultry" value="poultry_manure"> Composted Poultry Manure</label>
+          <label class="check-item"><input type="checkbox" id="chkCompost" value="compost"> Agricultural Compost</label>
+        </div>
+
+        <button class="btn btn-primary" onclick="fetchOrganicRecipe()">
+          🌿 Generate Organic Recipe (ജൈവവള കൂട്ട് തയ്യാറാക്കുക)
+        </button>
+      </section>
+
+      <!-- RECIPE OUTPUT CONTAINER -->
+      <div id="organicRecipeContainer">
+        <!-- Rendered dynamically -->
+      </div>
+    </div> <!-- /subContentOrganic -->
+
+  </div> <!-- /tabAdvisor -->
+
+
+  <!-- ========================================================= -->
+  <!-- TAB 3: AI-POWERED FARMER FEED (MALAYALAM)                 -->
+  <!-- ========================================================= -->
+  <div id="tabFeed" class="tab-content">
+
+    <section class="hero hero-feed">
+      <small>KNOWLEDGE & ADVISORY FEED</small>
+      <h2>📰 കർഷക ഫീഡ് (Farmer Feed)</h2>
+      <p>കേരള കാർഷിക സർവ്വകലാശാലയുടെയും ICAR-ന്റെയും ആധികാരിക അറിവുകൾ ലളിതമായ മലയാളത്തിൽ.</p>
+    </section>
+
+    <!-- SEARCH & FILTER BAR -->
+    <section class="card feed-control-card">
+      <div class="feed-search-bar">
+        <input type="text" id="feedQueryInput" placeholder="ചോദ്യങ്ങൾ ചോദിക്കുക (ഉദാ: ഇലകളിൽ ദ്വാരങ്ങൾ, കുരുമുളക് വാട്ടരോഗം, തണ്ടുതുരപ്പൻ പുഴു)...">
+        <button class="btn btn-primary" onclick="searchFeed()">
+          🔍 തിരയുക (Search)
+        </button>
+        <button class="btn btn-secondary" onclick="resetFeed()">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <!-- CATEGORY PILLS -->
+      <div class="feed-category-pills">
+        <button class="pill-btn active" onclick="filterFeedCategory('all', this)">എല്ലാം (All)</button>
+        <button class="pill-btn" onclick="filterFeedCategory('Pest Management', this)">കീടനിയന്ത്രണം (Pest)</button>
+        <button class="pill-btn" onclick="filterFeedCategory('Plant Diseases', this)">രോഗങ്ങൾ (Diseases)</button>
+        <button class="pill-btn" onclick="filterFeedCategory('Organic Farming', this)">ജൈവകൃഷി (Organic)</button>
+        <button class="pill-btn" onclick="filterFeedCategory('Soil Health', this)">മണ്ണും നനയും (Soil & Irrigation)</button>
+        <button class="pill-btn" onclick="filterFeedCategory('Crop Protection', this)">വിളസംരക്ഷണം (Protection)</button>
+      </div>
+    </section>
+
+    <!-- FEED CARDS CONTAINER (SWIPEABLE / SCROLLABLE) -->
+    <div class="feed-view-controls">
+      <span id="feedCountLabel">ലഭ്യമായ കാർഡുകൾ: 0</span>
+      <div class="swipe-nav-btns">
+        <button class="btn-icon" title="Previous card" onclick="scrollFeedCard(-1)">◀ മുൻപത്തെ കാർഡ്</button>
+        <button class="btn-icon" title="Next card" onclick="scrollFeedCard(1)">അടുത്ത കാർഡ് ▶</button>
+      </div>
+    </div>
+
+    <div id="feedCardsWrapper" class="feed-cards-wrapper">
+      <div class="empty-state">
+        കാർഷിക വിവരങ്ങൾ ശേഖരിക്കുന്നു... (Loading agricultural feed...)
+      </div>
+    </div>
+
+    <!-- RAG SOURCES CONTAINER (COLLAPSIBLE CITATIONS) -->
+    <details id="ragSourcesDetails" class="rag-sources-details" style="display: none;">
+      <summary>📚 ആധികാരിക സ്രോതസ്സുകൾ (Retrieved Verified Document Sources)</summary>
+      <div id="ragSourcesList" class="rag-sources-list"></div>
+    </details>
+
+  </div> <!-- /tabFeed -->
 
 </main>
 
 <footer>
-  Smart Irrigation Control Center • AI-assisted irrigation monitoring
+  Smart Irrigation Control Center • AI-assisted irrigation monitoring & Agricultural Advisory Hub
+  <br>
+  Knowledge grounded in Kerala Agricultural University (KAU) & ICAR Package of Practices
 </footer>
 
 <script src="script.js"></script>
