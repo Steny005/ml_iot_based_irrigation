@@ -1,7 +1,8 @@
 """
 Organic Manure Recipe Generator Engine
 Scientifically grounded recipes combining locally available organic inputs for Kerala crops.
-Distinguishes between composting preparations, liquid bio-formulations, and direct field-application mixtures.
+Explicitly distinguishes between composting preparations, liquid bio-formulations, and direct field-application mixtures.
+Validates ingredient proportions and enforces strict pathogen and bio-safety protocols.
 """
 
 from typing import List, Dict, Any, Optional
@@ -15,7 +16,7 @@ ORGANIC_INPUT_PROFILES = {
         "approx_p": 0.2,
         "approx_k": 0.5,
         "c_n_ratio": "20:1 to 25:1 (when decomposed)",
-        "handling_caution": "Must be well decomposed (dark brown, earthy smell). Never use fresh slurry directly on plant collars to avoid root rot and heat injury."
+        "handling_caution": "Must be well decomposed (dark brown, earthy smell). Never use fresh slurry directly on plant collars to avoid root rot, heat injury, and fungal damping-off."
     },
     "poultry_manure": {
         "name": "Composted Poultry Droppings / Manure",
@@ -24,7 +25,7 @@ ORGANIC_INPUT_PROFILES = {
         "approx_p": 2.5,
         "approx_k": 1.4,
         "c_n_ratio": "10:1 to 12:1",
-        "handling_caution": "HIGH RISK: Fresh poultry manure contains volatile uric acid and ammonia that cause catastrophic root and foliage burn. MUST be co-composted with dry carbonaceous material (straw/coir pith) for at least 6-8 weeks before field application."
+        "handling_caution": "HIGH RISK: Fresh poultry manure contains volatile uric acid and ammonia that cause catastrophic root and foliage burn, alongside potential Salmonella/E. coli pathogen risks. MUST undergo thermophilic co-composting (>55°C) with dry carbonaceous material (paddy straw/coir pith) for 6-8 weeks before field application."
     },
     "vermicompost": {
         "name": "Earthworm Castings / Vermicompost",
@@ -33,7 +34,7 @@ ORGANIC_INPUT_PROFILES = {
         "approx_p": 1.2,
         "approx_k": 1.5,
         "c_n_ratio": "15:1",
-        "handling_caution": "Store in shade with 20-25% moisture. Do not expose to direct sun or drying wind which kills beneficial microbial flora."
+        "handling_caution": "Store in dense shade with 20-25% moisture. Do not expose to direct sun or drying wind which eliminates beneficial microbial flora."
     },
     "farmyard_manure": {
         "name": "Well-cured Farmyard Manure (FYM)",
@@ -51,7 +52,7 @@ ORGANIC_INPUT_PROFILES = {
         "approx_p": 1.0,
         "approx_k": 1.4,
         "c_n_ratio": "10:1",
-        "handling_caution": "Acts as a natural nitrification inhibitor and soil nematicide. Avoid over-application around sensitive young seedlings; incorporate into soil."
+        "handling_caution": "Acts as a natural nitrification inhibitor and soil nematicide. Avoid over-application around sensitive young seedlings; incorporate 5-10 cm into soil."
     },
     "bone_meal": {
         "name": "Sterilized Bone Meal (Raw / Steamed)",
@@ -60,7 +61,7 @@ ORGANIC_INPUT_PROFILES = {
         "approx_p": 20.0,
         "approx_k": 0.0,
         "c_n_ratio": "N/A",
-        "handling_caution": "Must be sterilized steamed bone meal to avoid anthrax or bacterial contamination. Incorporate into root zone as phosphorus is immobile."
+        "handling_caution": "Must be sterilized steamed bone meal to eliminate bacterial contamination. Incorporate into root zone as phosphorus is immobile."
     },
     "wood_ash": {
         "name": "Kitchen Wood Ash (Coconut shell / Hardwood)",
@@ -88,24 +89,25 @@ RECIPE_TEMPLATES = [
         "id": "enriched_jeevamrutham",
         "name": "Liquid Jeevamrutham Bio-Enhancer",
         "recipe_type": "Liquid Microbial Bio-Formulation (Field Fermentation)",
+        "recipe_category": "direct_field_application",
         "primary_crops": ["paddy", "banana", "vegetables", "pepper", "coconut"],
         "suitable_stages": ["Vegetative Growth", "Active Tillering", "Flowering", "Berry Development"],
         "ingredients": [
-            {"item": "Fresh indigenous cow dung", "proportion": "10 kg", "percentage": 4.8},
-            {"item": "Fresh cow urine (gomutra)", "proportion": "5 to 10 litres", "percentage": 4.8},
-            {"item": "Organic jaggery / molasses", "proportion": "1 to 2 kg", "percentage": 1.0},
-            {"item": "Pulse flour (Besan / Gram flour)", "proportion": "1 to 2 kg", "percentage": 1.0},
-            {"item": "Uncontaminated virgin forest / bund soil", "proportion": "A handful (100-200 g)", "percentage": 0.1},
-            {"item": "Clean chlorine-free water", "proportion": "200 litres", "percentage": 88.3}
+            {"item": "Fresh indigenous cow dung", "proportion": "10 kg", "percentage": 4.5},
+            {"item": "Fresh cow urine (gomutra)", "proportion": "10 litres", "percentage": 4.5},
+            {"item": "Organic jaggery / molasses", "proportion": "2 kg", "percentage": 0.9},
+            {"item": "Pulse flour (Besan / Gram flour)", "proportion": "2 kg", "percentage": 0.9},
+            {"item": "Uncontaminated virgin forest / bund soil", "proportion": "0.2 kg", "percentage": 0.1},
+            {"item": "Clean chlorine-free water", "proportion": "200 litres", "percentage": 89.1}
         ],
         "preparation_instructions": [
             "1. Take 200 litres of clean, non-chlorinated water in a 250L plastic drum placed in dense shade (never in direct sun).",
-            "2. Add 10 kg cow dung and 5-10 litres cow urine; stir thoroughly with a wooden pole clockwise.",
+            "2. Add 10 kg cow dung and 10 litres cow urine; stir thoroughly with a wooden pole clockwise.",
             "3. Dissolve 2 kg jaggery and 2 kg besan flour in a separate bucket of water and add to the drum.",
-            "4. Add a handful of virgin fertile soil from field borders or beneath a banyan/neem tree to inoculate native beneficial microflora.",
+            "4. Add 200g of virgin fertile soil from field borders or beneath a banyan/neem tree to inoculate native beneficial microflora.",
             "5. Stir the concoction for 5 minutes clockwise three times daily (morning, noon, evening).",
             "6. Keep drum covered with a porous jute gunny sack to allow aerobic breathing while blocking flies.",
-            "7. The solution will ferment actively within 48 to 72 hours, releasing a pleasant fermented aroma. Ready for application on days 3 to 7."
+            "7. The solution ferments actively within 48 to 72 hours, releasing a pleasant fermented aroma. Ready for application on days 3 to 7."
         ],
         "application_method": "Soil drenching along crop basins or through flood irrigation channels (200 litres per acre). For foliar use, filter through double-layer muslin cloth and dilute 10% (1L Jeevamrutham in 10L water).",
         "suitable_application_stage": "Apply every 15-21 days during active vegetative and flowering periods.",
@@ -116,18 +118,19 @@ RECIPE_TEMPLATES = [
         "id": "trichoderma_enriched_fym",
         "name": "Trichoderma-Enriched Bio-Fungicidal Manure Mix",
         "recipe_type": "Solid Bio-Control Manure Blend",
+        "recipe_category": "direct_field_application",
         "primary_crops": ["banana", "pepper", "vegetables", "coconut"],
         "suitable_stages": ["Planting / Pit Preparation", "Pre-Monsoon Active Flush", "Basal / Bed Preparation"],
         "ingredients": [
             {"item": "Well-rotted Farmyard Manure or Vermicompost", "proportion": "90 kg", "percentage": 85.0},
             {"item": "Neem Seed Cake powder", "proportion": "10 kg", "percentage": 9.5},
-            {"item": "Trichoderma harzianum / viride talc formulation", "proportion": "1 to 2 kg", "percentage": 1.9},
-            {"item": "Clean water for moisture maintenance", "proportion": "3-5 litres (to hold 25% moisture)", "percentage": 3.6}
+            {"item": "Trichoderma harzianum / viride talc formulation", "proportion": "2 kg", "percentage": 1.9},
+            {"item": "Clean water for moisture maintenance", "proportion": "3.8 litres", "percentage": 3.6}
         ],
         "preparation_instructions": [
             "1. Spread 90 kg of well-rotted FYM or vermicompost evenly on a clean polythene sheet under cool tree shade.",
             "2. Mix in 10 kg of finely ground neem cake powder uniformly throughout the manure.",
-            "3. Sprinkle 1 to 2 kg of Trichoderma powder over the heap.",
+            "3. Sprinkle 2 kg of Trichoderma powder over the heap.",
             "4. Sprinkle water lightly so that the mixture is moist (a squeezed handful should form a ball without dripping water).",
             "5. Heap the mixture into a neat mound, cover with moistened gunny sacks or banana leaves, and keep undisturbed for 7 to 10 days.",
             "6. By day 7, a dense whitish-green fungal mycelium will completely colonize the entire manure mass. Mix once and apply immediately to plant basins."
@@ -141,6 +144,7 @@ RECIPE_TEMPLATES = [
         "id": "fortified_compost_manure",
         "name": "Potash & Phosphate Fortified Organic Blend",
         "recipe_type": "Direct Field Application Organic Combination",
+        "recipe_category": "direct_field_application",
         "primary_crops": ["coconut", "banana", "vegetables"],
         "suitable_stages": ["Early Vegetative", "Active Growth", "Shooting / Bunch Emergence", "Bearing Adult Palm (Post-Monsoon)"],
         "ingredients": [
@@ -149,7 +153,7 @@ RECIPE_TEMPLATES = [
             {"item": "Sterilized Steamed Bone Meal", "proportion": "10 kg", "percentage": 12.0},
             {"item": "Clean Wood Ash (dry)", "proportion": "10 kg", "percentage": 12.0},
             {"item": "Biofertilizer consortia (Azospirillum + PSB)", "proportion": "2 kg", "percentage": 2.4},
-            {"item": "Water (for light moistening)", "proportion": "1-2 litres", "percentage": 1.6}
+            {"item": "Water (for light moistening)", "proportion": "1.3 litres", "percentage": 1.6}
         ],
         "preparation_instructions": [
             "1. On a shaded floor or dry canvas, mix the vermicompost and neem cake thoroughly.",
@@ -167,12 +171,13 @@ RECIPE_TEMPLATES = [
         "id": "aerobic_farm_waste_compost",
         "name": "Balanced Pit / Heap Aerobic Composting Recipe",
         "recipe_type": "Full Aerobic Composting Protocol (60-day cycle)",
+        "recipe_category": "compost_preparation",
         "primary_crops": ["all_crops", "paddy", "banana", "coconut", "pepper", "vegetables"],
         "suitable_stages": ["Land Preparation", "Pre-Monsoon Basin Mulch"],
         "ingredients": [
             {"item": "Brown Carbon Material (dry paddy straw, coir pith, dry fallen leaves)", "proportion": "200 kg (60% volume)", "percentage": 50.0},
             {"item": "Green Nitrogen Material (legume cuttings, fresh vegetable waste, cowpea vines)", "proportion": "100 kg (30% volume)", "percentage": 25.0},
-            {"item": "Fresh cattle dung slurry", "proportion": "40 kg mixed with 60L water", "percentage": 15.0},
+            {"item": "Fresh cattle dung slurry", "proportion": "60 kg (mixed with water)", "percentage": 15.0},
             {"item": "Poultry manure (for nitrogen acceleration)", "proportion": "20 kg", "percentage": 5.0},
             {"item": "Topsoil or mature compost (inoculum)", "proportion": "20 kg", "percentage": 5.0}
         ],
@@ -183,15 +188,24 @@ RECIPE_TEMPLATES = [
             "4. Layer 3: Sprinkle poultry manure and drench with cattle dung slurry to provide microbial starter.",
             "5. Layer 4: Dust with 2 cm garden topsoil to provide native mineral microbes.",
             "6. Repeat alternating carbon and nitrogen layers until pile reaches 1.2 meters in height. Insert vertical bamboo poles with perforated notches to maintain internal oxygen.",
-            "7. Turn the pile completely on Day 15, Day 30, and Day 45 to aerate and equalize heat (temperature should reach 55-60°C to sanitize weed seeds).",
+            "7. Turn the pile completely on Day 15, Day 30, and Day 45 to aerate and equalize heat (temperature should reach 55-60°C to sanitize pathogens and weed seeds).",
             "8. By Day 60, the heap cools down to ambient temperature and transforms into dark, crumbly, sweet-smelling humus ready for farm use."
         ],
         "application_method": "Incorporate 2 to 3 tonnes per acre during land preparation or 5-10 kg per tree basin annually.",
         "suitable_application_stage": "Pre-sowing, land preparation, or annual perennial basin rejuvenation.",
         "expected_benefits": "High cation exchange capacity (CEC), long-term soil structure improvement, high moisture holding capacity, and complete recycling of on-farm organic residues.",
-        "safety_precautions": "Never add dog/cat feces, diseased blighted plant debris, or weed rhizomes with active tubers. Turn pile if foul anaerobic odor develops."
+        "safety_precautions": "PATHOGEN SAFETY: Fresh animal droppings must achieve internal temperatures of 55-60°C for at least 72 consecutive hours during composting to neutralize fecal pathogens (E. coli, Salmonella). Never apply unfermented poultry droppings directly to root zones."
     }
 ]
+
+
+def validate_recipe_proportions(recipe: Dict[str, Any]) -> bool:
+    """Validates that recipe ingredient percentages are positive and sum to approximately 100%."""
+    ingredients = recipe.get("ingredients", [])
+    if not ingredients:
+        return False
+    total_pct = sum(float(i.get("percentage", 0.0)) for i in ingredients)
+    return 98.0 <= total_pct <= 102.0
 
 
 def generate_organic_recipe(
@@ -202,6 +216,7 @@ def generate_organic_recipe(
 ) -> Dict[str, Any]:
     """
     Selects or tailors an organic manure recipe based on crop, available inputs, and stage.
+    Validates ingredient proportions and biological safety rules.
     """
     crop_id = (crop_id or "").lower().strip()
     available_inputs = [i.lower().strip() for i in (available_inputs or [])]
@@ -220,9 +235,11 @@ def generate_organic_recipe(
     if not matched_recipes:
         matched_recipes = RECIPE_TEMPLATES
 
-    # Select primary recipe
     selected = matched_recipes[0]
     alternatives = matched_recipes[1:]
+
+    # Validate proportions of selected recipe
+    proportions_valid = validate_recipe_proportions(selected)
 
     # Highlight available vs missing inputs
     available_input_details = []
@@ -237,12 +254,12 @@ def generate_organic_recipe(
             "handling_caution": profile["handling_caution"]
         })
 
-    # Prepare customized advice
+    # Clear scientific disclaimer
     scientific_disclaimer = (
         "IMPORTANT SCIENTIFIC NOTICE: Organic manures possess variable natural nutrient contents "
-        "dependent on animal feed, moisture, and curing methods. The figures provided are typical agricultural estimates "
-        "and NOT guaranteed NPK analysis. Fresh poultry and animal manures MUST be fully composted before root application "
-        "to prevent ammonia toxicity and pathogen hazards."
+        "dependent on animal diet, bed material, moisture, and curing methods. The figures provided are typical agronomic estimates "
+        "and NOT guaranteed NPK analysis. Fresh poultry manure and unfermented animal wastes MUST be fully composted before root application "
+        "to prevent ammonia toxicity and pathogen contamination."
     )
 
     return {
@@ -250,6 +267,9 @@ def generate_organic_recipe(
         "crop_id": crop_id,
         "growth_stage": growth_stage or "General Growth Stage",
         "primary_recipe": selected,
+        "recipe_category": selected.get("recipe_category", "direct_field_application"),
+        "is_compost_preparation": selected.get("recipe_category") == "compost_preparation",
+        "proportions_validated": proportions_valid,
         "alternative_recipes": alternatives,
         "inputs_analysis": available_input_details,
         "disclaimer": scientific_disclaimer,

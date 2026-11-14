@@ -9,7 +9,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -570,6 +570,24 @@ def get_explanation(payload: ExplainRequest):
 
 
 # ============================================================
+# Admin Authorization for Feed Management
+# ============================================================
+
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "admin_secure_irrigation_2026")
+
+def verify_admin_authorization(
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    authorization: Optional[str] = Header(None)
+):
+    token = x_admin_key or (authorization.replace("Bearer ", "").strip() if authorization else None)
+    if not token or token != ADMIN_SECRET_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: Valid administrative key required to trigger feed refresh."
+        )
+    return True
+
+# ============================================================
 # AI-POWERED FARMER FEED ENDPOINTS
 # ============================================================
 
@@ -597,11 +615,11 @@ def query_feed(payload: FeedQueryRequest):
 
 
 @app.post("/api/feed/refresh")
-def refresh_feed():
-    """Re-indexes agricultural documents and refreshes feed cards."""
+def refresh_feed(authorized: bool = Depends(verify_admin_authorization)):
+    """Re-indexes agricultural documents (.pdf, .txt, .md) and refreshes feed cards (Admin protected)."""
     total = feed_store.refresh()
     return {
         "status": "success",
-        "message": "Successfully refreshed agricultural documents and cards.",
+        "message": "Successfully re-indexed agricultural documents and refreshed feed cards.",
         "total_cards": total
     }
