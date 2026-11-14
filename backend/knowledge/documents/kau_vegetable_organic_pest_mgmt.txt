@@ -1,0 +1,30 @@
+TITLE: Kerala Agricultural University (KAU) - Organic Vegetable Protection & Nutrition
+INSTITUTION: Kerala Agricultural University & State Horticulture Mission Kerala
+DOCUMENT_TYPE: Safe-to-Eat Vegetable Production Manual
+CROP: Vegetables / Okra / Chilli / Brinjal / Gourds (പച്ചക്കറികൾ)
+TOPIC: Non-chemical Pest Control, Organic Bio-pesticides, and Bio-fungicides
+
+1. Shoot and Fruit Borer in Bhindi and Brinjal (കായതുരപ്പൻ പുഴു)
+Symptoms: Drooping and drying of terminal growing shoot tips in vegetative stage; bore holes in developing fruits filled with caterpillar excreta, rendering fruits unmarketable.
+Management & Remedy:
+- Promptly clip withered shoots and collect and bury infested fruits every alternate day.
+- Install yellow sticky traps and pheromone traps (Lucinlure / Helilure) @ 8-10 traps per acre.
+- Spray Bacillus thuringiensis (Bt) kurstaki formulation @ 2g per litre of water or neem seed kernel extract (NSKE) 5% during evening hours.
+- Release Trichogramma chilonis egg parasitoid cards @ 20,000 parasitoids per acre.
+Citation: KAU Organic Agriculture Hand Book, Chapter on Eco-friendly Plant Protection.
+
+2. Whiteflies, Aphids and Sucking Pests transmitting Leaf Curl Virus (വെള്ളീച്ച, ഇലപ്പേൻ)
+Symptoms: Chlorotic yellow speckling, downward leaf cupping, curling of leaf margins, and sooty mold fungus growing on honeydew excretion.
+Management & Remedy:
+- Install yellow sticky sheets (painted with castor oil or grease) at crop canopy level.
+- Spray Neem oil garlic emulsion: Grind 50g garlic, mix with 50 ml neem oil and 10g bar soap flakes dissolved in 100 ml warm water; dilute into 3 litres of water and spray on undersides of leaves.
+- Spray Verticillium lecanii entomopathogenic fungus @ 5g/L during humid afternoon conditions.
+Citation: KAU Package of Practices: Vegetables (Integrated Pest Management).
+
+3. Damping Off in Vegetable Nurseries (തൈചീയൽ രോഗം - Pythium aphanidermatum)
+Symptoms: Water-soaked constriction at seedling soil line causing seedlings to collapse and topple over in nursery beds.
+Management & Remedy:
+- Solarize nursery seedbeds using clear polythene sheets for 25-30 days before sowing.
+- Treat seeds with Trichoderma viride @ 5g per 100g seeds.
+- Drench seedbed with Pseudomonas fluorescens 20g/L or copper oxychloride 0.25% if damping off appears.
+Citation: Kerala Agriculture Department Advisory on Commercial Vegetable Nurseries.

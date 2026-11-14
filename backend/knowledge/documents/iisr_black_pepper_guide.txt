@@ -1,0 +1,20 @@
+TITLE: ICAR - Indian Institute of Spices Research (IISR) - Black Pepper Production & Protection
+INSTITUTION: ICAR-IISR Kozhikode & Kerala Agricultural University
+DOCUMENT_TYPE: National Spices Advisory Bulletin
+CROP: Black Pepper (കുരുമുളക്)
+TOPIC: Foot Rot (Quick Wilt), Pollu Beetle, and Soil Microflora
+
+1. Foot Rot / Quick Wilt Disease (ദ്രുതവാട്ടം - Phytophthora capsici)
+Symptoms: Sudden blackish rotting of collar region near soil level leading to drooping of leaves within 3-5 days; spikes and berries shed rapidly; total vine collapse. Peak incidence occurs during heavy southwest monsoon (June-July).
+Management & Remedy:
+- Biological protection: Apply Trichoderma harzianum colonized neem cake-FYM mixture (1 kg neem cake + 5 kg FYM enriched with 50g Trichoderma) to vine basin during May pre-monsoon showers.
+- Soil drenching and foliar spraying with 1% Bordeaux mixture or copper oxychloride 0.2% (2g/L) or potassium phosphonate (Akomin) @ 3 ml/L at onset of monsoon in May-June, repeated in August.
+- Ensure vine basins on sloping lands have small contour terraces to avoid soil wash and water logging around vine collars.
+Citation: ICAR-IISR Extension Pamphlet on Black Pepper Foot Rot Management.
+
+2. Pollu Beetle (പോളുവണ്ട് - Longitarsus nigripennis)
+Symptoms: Tiny flea beetles chew circular pinholes in tender leaves; grubs bore inside developing young berries, turning them hollow, dry, and dark ('pollu berries').
+Management & Remedy:
+- Spray neem oil 2% or quinalphos 0.05% @ 2 ml per litre during July-October when spikes and berries are emerging.
+- Maintain adequate shade management — prune live standard tree branches (e.g., Erythrina/silver oak) to allow 50% filtered sunlight.
+Citation: KAU Package of Practices: Spices & Plantation Crops.

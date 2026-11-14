@@ -1,11 +1,25 @@
 import os
+import sys
 import joblib
 import pandas as pd
 import requests
 
-from fastapi import FastAPI, HTTPException
+# Ensure backend directory is in python path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
+
+from advisor.crops_data import CROPS_DATABASE
+from advisor.fertilizer_engine import get_available_crops, recommend_fertilizer
+from advisor.organic_engine import generate_organic_recipe, ORGANIC_INPUT_PROFILES
+from advisor.ai_explainer import generate_advisor_explanation
+from feed.rag_engine import RAGEngine
+from feed.store import FeedStore
 
 
 # ============================================================
@@ -38,6 +52,16 @@ app.add_middleware(
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "ml", "saved_model.pkl")
+
+# ============================================================
+# RAG Engine & Farmer Feed Storage Initialization
+# ============================================================
+
+DOCS_DIR = os.path.join(CURRENT_DIR, "knowledge", "documents")
+FEED_DATA_FILE = os.path.join(CURRENT_DIR, "data", "feed_cards.json")
+rag_engine = RAGEngine(DOCS_DIR)
+feed_store = FeedStore(FEED_DATA_FILE, rag_engine)
+
 
 try:
     model = joblib.load(MODEL_PATH)
@@ -446,3 +470,138 @@ def process_telemetry(
 def get_dashboard_data():
 
     return latest_system_state
+
+# ============================================================
+# Pydantic Schemas for AI Advisor & Feed
+# ============================================================
+
+class FertilizerRequest(BaseModel):
+    crop_id: str = Field(..., example="paddy")
+    growth_stage: Optional[str] = Field(None, example="Active Tillering (15-20 DAT)")
+    latitude: float = Field(9.50996, example=9.50996)
+    longitude: float = Field(76.55067, example=76.55067)
+    soil_data: Optional[Dict[str, Any]] = None
+
+
+class OrganicRecipeRequest(BaseModel):
+    crop_id: str = Field(..., example="banana")
+    growth_stage: Optional[str] = Field(None, example="Early Vegetative")
+    available_inputs: Optional[List[str]] = Field(default_factory=list, example=["cow_dung", "vermicompost", "neem_cake"])
+    soil_condition: Optional[str] = None
+
+
+class ExplainRequest(BaseModel):
+    crop_name: str
+    stage: str
+    weather_summary: str = "Clear weather"
+    recommendations: List[Dict[str, Any]] = []
+
+
+class FeedQueryRequest(BaseModel):
+    query: str = Field(..., example="കുരുമുളക് വാട്ടരോഗം")
+    top_k: int = Field(5, example=5)
+
+
+# ============================================================
+# AI AGRICULTURAL ADVISOR ENDPOINTS
+# ============================================================
+
+@app.get("/api/advisor/crops")
+def list_crops():
+    """Returns supported crops, scientific names, and their growth stages."""
+    return {
+        "status": "success",
+        "crops": get_available_crops()
+    }
+
+
+@app.post("/api/advisor/fertilizer")
+def get_fertilizer_recommendation(payload: FertilizerRequest):
+    """Computes verified fertilizer recommendations incorporating stage, coordinates, and weather."""
+    weather_info = None
+    try:
+        rain_expected, rain_prob, rain_amt = check_rain_next_hour()
+        weather_info = {
+            "rain_probability": rain_prob,
+            "rain_amount": rain_amt
+        }
+    except Exception as e:
+        weather_info = {"rain_probability": 0, "rain_amount": 0.0}
+
+    return recommend_fertilizer(
+        crop_id=payload.crop_id,
+        growth_stage=payload.growth_stage,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        weather_info=weather_info,
+        soil_data=payload.soil_data
+    )
+
+
+@app.post("/api/advisor/organic-recipe")
+def get_organic_recipe(payload: OrganicRecipeRequest):
+    """Generates scientific organic manure recipe based on available farm inputs."""
+    return generate_organic_recipe(
+        crop_id=payload.crop_id,
+        growth_stage=payload.growth_stage,
+        available_inputs=payload.available_inputs,
+        soil_condition=payload.soil_condition
+    )
+
+
+@app.get("/api/advisor/organic-inputs")
+def list_organic_inputs():
+    """Returns verified list of organic manure inputs and nutrient profiles."""
+    return {
+        "status": "success",
+        "inputs": ORGANIC_INPUT_PROFILES
+    }
+
+
+@app.post("/api/advisor/explain")
+def get_explanation(payload: ExplainRequest):
+    """Generates AI farmer-friendly explanation grounded in KAU guidelines."""
+    return generate_advisor_explanation(
+        crop_name=payload.crop_name,
+        stage=payload.stage,
+        weather_summary=payload.weather_summary,
+        recommendations_summary=payload.recommendations
+    )
+
+
+# ============================================================
+# AI-POWERED FARMER FEED ENDPOINTS
+# ============================================================
+
+@app.get("/api/feed")
+def get_farmer_feed(
+    category: Optional[str] = Query(None),
+    crop: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=50)
+):
+    """Retrieves swipeable agricultural cards in Malayalam with category and crop filters."""
+    cards = feed_store.get_cards(category=category, crop=crop, limit=limit)
+    return {
+        "status": "success",
+        "count": len(cards),
+        "cards": cards
+    }
+
+
+@app.post("/api/feed/query")
+def query_feed(payload: FeedQueryRequest):
+    """RAG-powered semantic search across agricultural documents in English and Malayalam."""
+    if not payload.query or len(payload.query.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Query string is too short.")
+    return feed_store.query_rag_feed(query=payload.query, top_k=payload.top_k)
+
+
+@app.post("/api/feed/refresh")
+def refresh_feed():
+    """Re-indexes agricultural documents and refreshes feed cards."""
+    total = feed_store.refresh()
+    return {
+        "status": "success",
+        "message": "Successfully refreshed agricultural documents and cards.",
+        "total_cards": total
+    }
