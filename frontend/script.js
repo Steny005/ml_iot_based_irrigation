@@ -4,6 +4,20 @@ const DASHBOARD_API = `${API_BASE}/api/dashboard`;
 const WEATHER_API = `${API_BASE}/api/weather`;
 const ADVISOR_CROPS_API = `${API_BASE}/api/advisor/crops`;
 const ADVISOR_FERT_API = `${API_BASE}/api/advisor/fertilizer`;
+
+// Update farm coordinates display (latitude & longitude)
+function updateFarmCoordinates() {
+  const latEl = document.getElementById('latValue');
+  const lonEl = document.getElementById('lonValue');
+  if (latEl && lonEl) {
+    latEl.textContent = FARM_LAT.toFixed(5);
+    lonEl.textContent = FARM_LON.toFixed(5);
+  }
+}
+
+// Call on initial load and after successful dashboard fetch
+window.addEventListener('load', updateFarmCoordinates);
+
 const ADVISOR_ORGANIC_API = `${API_BASE}/api/advisor/organic-recipe`;
 const ADVISOR_EXPLAIN_API = `${API_BASE}/api/advisor/explain`;
 const FEED_API = `${API_BASE}/api/feed`;
