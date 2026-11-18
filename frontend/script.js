@@ -44,8 +44,6 @@ const weatherTag = document.getElementById("weatherTag");
 const soilValue = document.getElementById("soilValue");
 const tempValue = document.getElementById("tempValue");
 const humidityValue = document.getElementById("humidityValue");
-const lightValue = document.getElementById("lightValue");
-const lightContext = document.getElementById("lightContext");
 const aiRecommendation = document.getElementById("aiRecommendation");
 const weatherDecision = document.getElementById("weatherDecision");
 const finalDecision = document.getElementById("finalDecision");
@@ -65,6 +63,7 @@ let supportedCropsList = [];
 let feedCardsList = [];
 let currentSpeakingUtterance = null;
 let currentSpeakingCardId = null;
+let organicRecipeSpeechText = "";
 
 // ===============================
 // CONNECTION STATUS
@@ -114,23 +113,25 @@ async function fetchDashboard() {
     const data = await response.json();
     const telemetry = data.latest_telemetry || data;
 
-    const soil = Number(telemetry.soil_moisture ?? 0);
-    const temperature = Number(telemetry.temperature ?? 0);
-    const humidity = Number(telemetry.humidity ?? 0);
-    const light = telemetry.light ?? 0;
-    const dropRate = Number(telemetry.moisture_drop_rate ?? 0);
-    const timeSince = Number(telemetry.time_since_irrigation ?? 0);
+    const hasTelemetry = telemetry.telemetry_received_at || telemetry.soil_moisture != null;
+    const soil = telemetry.soil_moisture;
+    const temperature = telemetry.temperature;
+    const humidity = telemetry.humidity;
+    const dropRate = telemetry.moisture_drop_rate;
+    const timeSince = telemetry.time_since_irrigation;
 
-    soilValue.textContent = soil.toFixed(1);
-    tempValue.textContent = temperature.toFixed(1);
-    humidityValue.textContent = humidity.toFixed(1);
+    soilValue.textContent = soil == null ? "--" : Number(soil).toFixed(1);
+    tempValue.textContent = temperature == null ? "--" : Number(temperature).toFixed(1);
+    humidityValue.textContent = humidity == null ? "--" : Number(humidity).toFixed(1);
 
-    const lightText = Number(light) === 1 ? "Good / Ample" : "Low";
-    lightValue.textContent = lightText;
-    lightContext.textContent = lightText;
-
-    dropRateValue.textContent = dropRate.toFixed(2);
-    timeSinceValue.textContent = `${timeSince} min`;
+    dropRateValue.textContent = dropRate == null ? "--" : Number(dropRate).toFixed(2);
+    const elapsedSeconds = telemetry.last_irrigation_at
+      ? (Date.now() - new Date(telemetry.last_irrigation_at).getTime()) / 1000
+      : (timeSince == null ? null : Number(timeSince) * 60);
+    timeSinceValue.textContent = elapsedSeconds == null ? "--" : formatDuration(elapsedSeconds);
+    const lastIrrigation = document.getElementById("lastIrrigationValue");
+    if (lastIrrigation) lastIrrigation.textContent = telemetry.last_irrigation_at
+      ? new Date(telemetry.last_irrigation_at).toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "No irrigation recorded";
 
     const ml = Number(telemetry.ml_recommendation ?? telemetry.ml_prediction ?? 0);
     const irrigationNeeded = ml === 1;
@@ -147,13 +148,21 @@ async function fetchDashboard() {
       weatherTag.textContent = "Weather: No immediate rain";
     }
 
-    finalDecision.textContent = irrigationNeeded ? "Irrigation Needed" : "Irrigation Not Needed";
-    decisionTitle.textContent = irrigationNeeded ? "Irrigation Needed" : "Irrigation Not Needed";
+    const pumpOn = telemetry.pump_status === "ON";
+    finalDecision.textContent = pumpOn ? "Watering ON" : "Watering OFF";
+    decisionTitle.textContent = pumpOn ? "Watering is ON" : (telemetry.weather_override ? "Rain soon · watering paused" : "Watering is OFF");
     decisionDescription.textContent = irrigationNeeded
       ? "The ML model recommends irrigation based on current field conditions."
       : "The ML model does not recommend irrigation under current field conditions.";
 
-    reasonText.textContent = telemetry.reason || (irrigationNeeded ? "The ML model recommends irrigation." : "The ML model does not recommend irrigation.");
+    reasonText.textContent = telemetry.override_reason || telemetry.reason || (irrigationNeeded ? "The ML model recommends irrigation." : "The ML model does not recommend irrigation.");
+
+    const overrideStatus = document.getElementById("overrideStatus");
+    if (overrideStatus) overrideStatus.textContent = `Mode: ${{auto:"Automatic", skip_rain:"Allow ML despite rain", force:"Force watering"}[telemetry.override_mode || "auto"]}`;
+    if (!hasTelemetry) {
+      decisionTitle.textContent = "Waiting for sensor data";
+      decisionDescription.textContent = "Values will appear after the controller sends its first telemetry reading.";
+    }
 
     setConnected(true);
   } catch (error) {
@@ -161,6 +170,30 @@ async function fetchDashboard() {
     setConnected(false);
     decisionTitle.textContent = "Waiting for field data";
     decisionDescription.textContent = "Unable to receive live telemetry from the controller.";
+  }
+}
+
+function formatDuration(value) {
+  const total = Math.max(0, Math.floor(Number(value)));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+async function setIrrigationMode(mode) {
+  const status = document.getElementById("overrideStatus");
+  try {
+    const response = await fetch(`${API_BASE}/api/irrigation/override`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "Could not change irrigation mode");
+    if (status) status.textContent = `${result.message} Mode: ${mode.replace("_", " ")}.`;
+    fetchDashboard();
+  } catch (error) {
+    if (status) status.textContent = `Control update failed: ${error.message}`;
   }
 }
 
@@ -185,8 +218,11 @@ async function fetchWeather() {
 
     if (!times.length) return;
 
-    const probability = Number(probabilities[0] ?? 0);
-    const rainAmountValue = Number(precipitation[0] ?? rain[0] ?? 0);
+    const now = Date.now();
+    let firstFuture = times.findIndex((stamp) => new Date(stamp).getTime() >= now);
+    if (firstFuture < 0) firstFuture = 0;
+    const probability = Number(probabilities[firstFuture] ?? 0);
+    const rainAmountValue = Number(precipitation[firstFuture] ?? rain[firstFuture] ?? 0);
 
     rainProbability.textContent = `${probability}%`;
     rainAmount.textContent = `${rainAmountValue.toFixed(1)} mm`;
@@ -206,9 +242,10 @@ async function fetchWeather() {
     }
 
     forecastStrip.innerHTML = "";
-    const count = Math.min(6, times.length);
+    const count = Math.min(6, times.length - firstFuture);
 
-    for (let i = 0; i < count; i++) {
+    for (let offset = 0; offset < count; offset++) {
+      const i = firstFuture + offset;
       const time = new Date(times[i]);
       const hour = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const prob = Number(probabilities[i] ?? 0);
@@ -381,7 +418,7 @@ function renderFertilizerResults(data) {
         </div>
       </div>
       <div class="fert-precautions">
-        <strong>⚠️ Precautions:</strong> ${rec.precautions}
+        <strong>Precautions:</strong> ${rec.precautions}
       </div>
       <div class="fert-ref">
         Source: ${rec.reference}
@@ -465,6 +502,7 @@ async function fetchOrganicRecipe() {
 }
 
 function renderOrganicRecipe(data) {
+  if (currentSpeakingCardId) stopSpeaking();
   const container = document.getElementById("organicRecipeContainer");
   const rec = data.primary_recipe;
   if (!rec) {
@@ -488,10 +526,29 @@ function renderOrganicRecipe(data) {
     stepItems += `<li>${s}</li>`;
   });
 
+  organicRecipeSpeechText = [
+    rec.name,
+    "Ingredients:",
+    ...rec.ingredients.map((ing) => `${ing.item}, ${ing.proportion}${ing.percentage ? `, ${ing.percentage} percent` : ""}`),
+    "Preparation instructions:",
+    ...rec.preparation_instructions.map((step, index) => `Step ${index + 1}. ${step}`),
+    `Application method and stage: ${rec.application_method}`,
+    `Suitable stage: ${rec.suitable_application_stage}`,
+    `Expected benefits: ${rec.expected_benefits}`,
+    `Safety precautions: ${rec.safety_precautions}`
+  ].filter(Boolean).join(". ");
+
   container.innerHTML = `
-    <div class="recipe-display-card">
-      <h3 class="recipe-title">🌿 ${rec.name}</h3>
+    <div class="recipe-display-card" id="card_organicRecipe">
+      <h3 class="recipe-title">${rec.name}</h3>
       <span class="recipe-type">${rec.recipe_type}</span>
+
+      <div class="recipe-audio-controls">
+        <button class="btn-listen" id="btnListen_organicRecipe" onclick="toggleRecipeListen()" aria-label="Read organic recipe aloud">
+          <span id="audioLabel_organicRecipe" data-default-label="Read recipe aloud">Read recipe aloud</span>
+        </button>
+        <span id="audioStatus_organicRecipe" class="speaking-indicator" style="display:none;" aria-live="polite"></span>
+      </div>
 
       <table class="ingredients-table">
         <thead>
@@ -519,7 +576,7 @@ function renderOrganicRecipe(data) {
       </div>
 
       <div class="recipe-precautions-box">
-        <strong>⚠️ Biological Safety Precautions:</strong>
+        <strong>Biological Safety Precautions:</strong>
         <p>${rec.safety_precautions}</p>
       </div>
 
@@ -528,6 +585,45 @@ function renderOrganicRecipe(data) {
       </div>
     </div>
   `;
+}
+
+function toggleRecipeListen() {
+  if (!("speechSynthesis" in window)) {
+    const status = document.getElementById("audioStatus_organicRecipe");
+    if (status) {
+      status.textContent = "Text-to-speech is not supported in this browser.";
+      status.style.display = "flex";
+    }
+    return;
+  }
+  if (currentSpeakingCardId === "organicRecipe") {
+    stopSpeaking();
+    return;
+  }
+  stopSpeaking();
+
+  const utterance = new SpeechSynthesisUtterance(organicRecipeSpeechText);
+  utterance.lang = "en-IN";
+  utterance.rate = 0.92;
+  const indianEnglishVoice = window.speechSynthesis.getVoices().find((voice) => /^en-IN$/i.test(voice.lang));
+  if (indianEnglishVoice) utterance.voice = indianEnglishVoice;
+
+  currentSpeakingCardId = "organicRecipe";
+  currentSpeakingUtterance = utterance;
+  const button = document.getElementById("btnListen_organicRecipe");
+  const label = document.getElementById("audioLabel_organicRecipe");
+  const status = document.getElementById("audioStatus_organicRecipe");
+  const card = document.getElementById("card_organicRecipe");
+  if (button) button.classList.add("speaking");
+  if (label) label.textContent = "Stop reading";
+  if (status) {
+    status.textContent = "Reading recipe aloud...";
+    status.style.display = "flex";
+  }
+  if (card) card.classList.add("speaking");
+  utterance.onend = stopSpeaking;
+  utterance.onerror = stopSpeaking;
+  window.speechSynthesis.speak(utterance);
 }
 
 // ============================================================
@@ -639,17 +735,16 @@ function renderFeedCards(cards) {
       <p class="feed-explanation">${c.explanation}</p>
 
       <div class="practical-tip-box">
-        <span class="practical-tip-label">💡 പ്രായോഗിക കാർഷിക നിർദേശം (Practical Tip):</span>
+        <span class="practical-tip-label">പ്രായോഗിക കാർഷിക നിർദേശം (Practical Tip):</span>
         <p class="practical-tip-text">${c.practical_tip}</p>
       </div>
 
       <div class="audio-bar">
         <button id="btnListen_${c.id}" class="btn-listen" onclick="toggleListenAloud('${c.id}')">
-          <span id="audioIcon_${c.id}">🔊</span>
           <span id="audioLabel_${c.id}">കേൾക്കുക (Listen Aloud)</span>
         </button>
         <div id="audioStatus_${c.id}" class="speaking-indicator" style="display: none;">
-          <span>🔊 വായിക്കുന്നു...</span>
+          <span>വായിക്കുന്നു...</span>
         </div>
       </div>
 
@@ -669,7 +764,7 @@ function renderFeedCards(cards) {
 
 function toggleListenAloud(cardId) {
   if (!("speechSynthesis" in window)) {
-    alert("ക്ഷമിക്കുക, നിങ്ങളുടെ ബ്രൗസറിൽ സ്പീച്ച് സിന്തസിസ് ലഭ്യമല്ല (Text-to-speech is not supported in this browser).");
+    alert("Text-to-speech is not supported in this browser.");
     return;
   }
 
@@ -687,27 +782,23 @@ function toggleListenAloud(cardId) {
 
   const textToSpeak = card.audio_text || `${card.title}. ${card.explanation}. ${card.practical_tip}`;
 
+  const voices = window.speechSynthesis.getVoices();
+  const mlVoice = voices.find((v) => /^ml([_-]|$)/i.test(v.lang) || v.name.toLowerCase().includes("malayalam"));
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
-  utterance.lang = "ml-IN"; // Prefer Malayalam
+  utterance.lang = "ml-IN"; // Ask the browser for Malayalam; it may fall back if unavailable.
   utterance.rate = 0.9; // Slightly slower for clear comprehension
   utterance.pitch = 1.0;
 
-  // Attempt to select a Malayalam voice if browser provides one
-  const voices = window.speechSynthesis.getVoices();
-  const mlVoice = voices.find((v) => v.lang.includes("ml") || v.name.toLowerCase().includes("malayalam"));
-  if (mlVoice) {
-    utterance.voice = mlVoice;
-  }
+  // Use an installed Malayalam voice when available; otherwise let the browser choose.
+  if (mlVoice) utterance.voice = mlVoice;
 
   // Visual cues
   const btn = document.getElementById(`btnListen_${cardId}`);
-  const icon = document.getElementById(`audioIcon_${cardId}`);
   const label = document.getElementById(`audioLabel_${cardId}`);
   const status = document.getElementById(`audioStatus_${cardId}`);
   const cardEl = document.getElementById(`card_${cardId}`);
 
   if (btn) btn.classList.add("speaking");
-  if (icon) icon.textContent = "⏹️";
   if (label) label.textContent = "നിർത്തുക (Stop)";
   if (status) status.style.display = "flex";
   if (cardEl) cardEl.classList.add("speaking");
@@ -734,14 +825,12 @@ function stopSpeaking() {
 
   if (currentSpeakingCardId) {
     const btn = document.getElementById(`btnListen_${currentSpeakingCardId}`);
-    const icon = document.getElementById(`audioIcon_${currentSpeakingCardId}`);
     const label = document.getElementById(`audioLabel_${currentSpeakingCardId}`);
     const status = document.getElementById(`audioStatus_${currentSpeakingCardId}`);
     const cardEl = document.getElementById(`card_${currentSpeakingCardId}`);
 
     if (btn) btn.classList.remove("speaking");
-    if (icon) icon.textContent = "🔊";
-    if (label) label.textContent = "കേൾക്കുക (Listen Aloud)";
+    if (label) label.textContent = label.dataset.defaultLabel || "കേൾക്കുക (Listen Aloud)";
     if (status) status.style.display = "none";
     if (cardEl) cardEl.classList.remove("speaking");
   }

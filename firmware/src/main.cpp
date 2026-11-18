@@ -24,6 +24,7 @@ const int SOIL_WET_ADC = 1200;
 DHT dht(DHT_PIN, DHT_TYPE);
 
 unsigned long lastIrrigationTime = 0;
+bool pumpWasOn = false;
 float previousMoisture = 50.0;
 unsigned long previousMillis = 0;
 const unsigned long TELEMETRY_INTERVAL_MS = 5000; // Send telemetry every 5 seconds
@@ -119,9 +120,11 @@ void loop() {
         // Actuate Relay Pin based on backend decision
         if (String(pumpCommand) == "ON") {
           digitalWrite(RELAY_PIN, HIGH);
-          lastIrrigationTime = currentMillis;
+          if (!pumpWasOn) lastIrrigationTime = currentMillis;
+          pumpWasOn = true;
         } else {
           digitalWrite(RELAY_PIN, LOW);
+          pumpWasOn = false;
         }
       } else {
         Serial.printf("[ERROR] HTTP POST failed! Error code: %d\n", httpResponseCode);

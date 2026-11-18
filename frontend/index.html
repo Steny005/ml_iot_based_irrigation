@@ -30,22 +30,18 @@
 <nav class="app-nav">
   <div class="nav-container">
     <button id="navIrrigationBtn" class="nav-btn active" onclick="switchTab('irrigation')">
-      <span class="nav-icon">💧</span> Field Control & Sensors
+      Field Control & Sensors
     </button>
     <button id="navAdvisorBtn" class="nav-btn" onclick="switchTab('advisor')">
-      <span class="nav-icon">🌾</span> AI Agricultural Advisor
+      AI Agricultural Advisor
     </button>
     <button id="navFeedBtn" class="nav-btn" onclick="switchTab('feed')">
-      <span class="nav-icon">📰</span> Farmer Feed (കർഷക ഫീഡ്)
+      Farmer Feed (കർഷക ഫീഡ്)
     </button>
   </div>
 </nav>
 
 <main>
-
-  <div id="offlineBanner" class="banner">
-    Connecting to field controller...
-  </div>
 
   <!-- ========================================================= -->
   <!-- TAB 1: EXISTING SMART IRRIGATION DASHBOARD                 -->
@@ -129,16 +125,12 @@
         </div>
 
         <div class="card metric">
-          <small>LIGHT</small>
-          <strong id="lightValue">--</strong>
-          <div class="card metric">
-            <small>LATITUDE</small>
-            <strong id="latValue">--</strong>
-          </div>
-          <div class="card metric">
-            <small>LONGITUDE</small>
-            <strong id="lonValue">--</strong>
-          </div>
+          <small>LATITUDE</small>
+          <strong id="latValue">9.50996</strong>
+        </div>
+        <div class="card metric">
+          <small>LONGITUDE</small>
+          <strong id="lonValue">76.55067</strong>
         </div>
       </div>
     </section>
@@ -172,6 +164,16 @@
           <small>REASON</small>
           <p id="reasonText">Waiting for data...</p>
         </div>
+        <div class="override-controls">
+          <small>FARMER CONTROL</small>
+          <div>
+            <button class="btn btn-secondary" onclick="setIrrigationMode('auto')">Automatic</button>
+            <button class="btn btn-secondary" onclick="setIrrigationMode('skip_rain')">Allow ML irrigation despite rain</button>
+            <button class="btn btn-primary" onclick="setIrrigationMode('force')">Force watering</button>
+          </div>
+          <p id="overrideStatus" aria-live="polite">Mode: Automatic</p>
+          <p><small>Low tank safety cutoff (below 15%) remains active.</small></p>
+        </div>
       </div>
 
       <div class="card">
@@ -182,11 +184,6 @@
 
         <div class="context">
           <div>
-            <span>Light intensity</span>
-            <strong id="lightContext">--</strong>
-          </div>
-
-          <div>
             <span>Moisture drop rate</span>
             <strong id="dropRateValue">--</strong>
           </div>
@@ -194,6 +191,10 @@
           <div>
             <span>Time since irrigation</span>
             <strong id="timeSinceValue">--</strong>
+          </div>
+          <div>
+            <span>Last irrigation (local time)</span>
+            <strong id="lastIrrigationValue">--</strong>
           </div>
         </div>
       </div>
@@ -209,16 +210,16 @@
 
     <section class="hero hero-advisor">
       <small>DECISION SUPPORT SYSTEM</small>
-      <h2>🌾 AI Agricultural Advisor</h2>
+      <h2>AI Agricultural Advisor</h2>
       <p>Scientific fertilizer schedules and organic manure recipes tailored to your crop, growth stage, and local weather.</p>
       
       <div class="advisor-location-bar">
         <div class="loc-chip">
-          <span>📍 Farm Coordinates:</span>
+          <span>Farm Coordinates:</span>
           <strong id="advisorCoords">9.50996° N, 76.55067° E (Kerala)</strong>
         </div>
         <div class="loc-chip">
-          <span>🌦 Forecast Status:</span>
+          <span>Forecast Status:</span>
           <strong id="advisorWeatherStatus">Loading forecast...</strong>
         </div>
       </div>
@@ -252,7 +253,7 @@
 
         <div class="form-group form-actions">
           <button id="btnGetFertilizer" class="btn btn-primary" onclick="fetchFertilizerRecommendations()">
-            🔍 Get Fertilizer Schedule
+            Get Fertilizer Schedule
           </button>
         </div>
       </div>
@@ -282,10 +283,10 @@
     <!-- ADVISOR SUB-TABS -->
     <div class="sub-nav-tabs">
       <button id="subTabFertBtn" class="sub-tab-btn active" onclick="switchAdvisorSubTab('fertilizer')">
-        🧪 Location-Based Fertilizer Recommendations
+        Location-Based Fertilizer Recommendations
       </button>
       <button id="subTabOrganicBtn" class="sub-tab-btn" onclick="switchAdvisorSubTab('organic')">
-        🌿 Organic Manure Recipe Generator
+        Organic Manure Recipe Generator
       </button>
     </div>
 
@@ -326,7 +327,6 @@
             <ul id="aiActionTips"></ul>
           </div>
           <div class="safety-alert-inline">
-            <span class="alert-icon">⚠️</span>
             <span id="aiSafetyAlert"></span>
           </div>
         </div>
@@ -355,7 +355,7 @@
         </div>
 
         <button class="btn btn-primary" onclick="fetchOrganicRecipe()">
-          🌿 Generate Organic Recipe (ജൈവവള കൂട്ട് തയ്യാറാക്കുക)
+          Generate Organic Recipe (ജൈവവള കൂട്ട് തയ്യാറാക്കുക)
         </button>
       </section>
 
@@ -375,7 +375,7 @@
 
     <section class="hero hero-feed">
       <small>KNOWLEDGE & ADVISORY FEED</small>
-      <h2>📰 കർഷക ഫീഡ് (Farmer Feed)</h2>
+      <h2>കർഷക ഫീഡ് (Farmer Feed)</h2>
       <p>കേരള കാർഷിക സർവ്വകലാശാലയുടെയും ICAR-ന്റെയും ആധികാരിക അറിവുകൾ ലളിതമായ മലയാളത്തിൽ.</p>
     </section>
 
@@ -384,10 +384,10 @@
       <div class="feed-search-bar">
         <input type="text" id="feedQueryInput" placeholder="ചോദ്യങ്ങൾ ചോദിക്കുക (ഉദാ: ഇലകളിൽ ദ്വാരങ്ങൾ, കുരുമുളക് വാട്ടരോഗം, തണ്ടുതുരപ്പൻ പുഴു)...">
         <button class="btn btn-primary" onclick="searchFeed()">
-          🔍 തിരയുക (Search)
+          തിരയുക (Search)
         </button>
         <button class="btn btn-secondary" onclick="resetFeed()">
-          🔄 Refresh
+          Refresh
         </button>
       </div>
 
@@ -419,7 +419,7 @@
 
     <!-- RAG SOURCES CONTAINER (COLLAPSIBLE CITATIONS) -->
     <details id="ragSourcesDetails" class="rag-sources-details" style="display: none;">
-      <summary>📚 ആധികാരിക സ്രോതസ്സുകൾ (Retrieved Verified Document Sources)</summary>
+      <summary>ആധികാരിക സ്രോതസ്സുകൾ (Retrieved Verified Document Sources)</summary>
       <div id="ragSourcesList" class="rag-sources-list"></div>
     </details>
 

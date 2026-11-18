@@ -3,6 +3,8 @@ import sys
 import joblib
 import pandas as pd
 import requests
+import time
+from datetime import datetime, timezone
 
 # Ensure backend directory is in python path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,7 +14,8 @@ if CURRENT_DIR not in sys.path:
 from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
+from zoneinfo import ZoneInfo
 
 from advisor.crops_data import CROPS_DATABASE
 from advisor.fertilizer_engine import get_available_crops, recommend_fertilizer
@@ -77,13 +80,13 @@ except Exception as e:
 # ============================================================
 
 latest_system_state = {
-    "soil_moisture": 0.0,
-    "temperature": 0.0,
-    "humidity": 0.0,
-    "light": 0,
-    "time_since_irrigation": 0,
-    "moisture_drop_rate": 0.0,
-    "water_tank_level": 100.0,
+    "soil_moisture": None,
+    "temperature": None,
+    "humidity": None,
+    "light": None,
+    "time_since_irrigation": None,
+    "moisture_drop_rate": None,
+    "water_tank_level": None,
 
     "ml_recommendation": 0,
 
@@ -95,8 +98,32 @@ latest_system_state = {
     "rain_probability": 0,
     "rain_amount": 0.0,
 
-    "override_reason": "None"
+    "override_reason": "Waiting for first sensor reading",
+    "override_mode": "auto",
+    "last_irrigation_at": None,
+    "telemetry_received_at": None
 }
+
+override_mode = "auto"
+last_irrigation_at = None
+weather_cache = {"fetched_at": 0.0, "data": None}
+
+
+def get_open_meteo_forecast():
+    """Return a short-lived cached forecast so polling and telemetry share one request."""
+    now = time.monotonic()
+    if weather_cache["data"] and now - weather_cache["fetched_at"] < 300:
+        return weather_cache["data"]
+    response = requests.get(
+        "https://api.open-meteo.com/v1/forecast",
+        params={"latitude": 9.50996, "longitude": 76.55067,
+                "hourly": "precipitation_probability,rain,precipitation,weather_code",
+                "forecast_days": 1, "timezone": "auto"},
+        timeout=4
+    )
+    response.raise_for_status()
+    weather_cache.update(data=response.json(), fetched_at=now)
+    return weather_cache["data"]
 
 
 # ============================================================
@@ -139,26 +166,8 @@ def root():
 
 @app.get("/api/weather")
 def get_weather():
-
-    url = (
-        "https://api.open-meteo.com/v1/forecast"
-        "?latitude=9.50996"
-        "&longitude=76.55067"
-        "&hourly=precipitation_probability,rain,precipitation,weather_code"
-        "&forecast_hours=6"
-        "&timezone=auto"
-    )
-
     try:
-
-        response = requests.get(
-            url,
-            timeout=10
-        )
-
-        response.raise_for_status()
-
-        return response.json()
+        return get_open_meteo_forecast()
 
     except requests.RequestException as e:
 
@@ -185,32 +194,18 @@ def check_rain_next_hour():
         rain_amount
     """
 
-    url = (
-        "https://api.open-meteo.com/v1/forecast"
-        "?latitude=9.50996"
-        "&longitude=76.55067"
-        "&hourly=precipitation_probability,rain,precipitation,weather_code"
-        "&forecast_hours=2"
-        "&timezone=auto"
-    )
-
     try:
-
-        response = requests.get(
-            url,
-            timeout=10
-        )
-
-        response.raise_for_status()
-
-        weather = response.json()
+        weather = get_open_meteo_forecast()
 
         hourly = weather["hourly"]
 
-        # First forecast hour
-        rain_probability = hourly["precipitation_probability"][0]
-
-        rain_amount = hourly["rain"][0]
+        farm_tz = ZoneInfo(weather.get("timezone", "Asia/Kolkata"))
+        current_hour = datetime.now(farm_tz).replace(minute=0, second=0, microsecond=0, tzinfo=None)
+        times = hourly.get("time", [])
+        index = next((i for i, stamp in enumerate(times)
+                      if datetime.fromisoformat(stamp).replace(tzinfo=None) >= current_hour), 0)
+        rain_probability = hourly["precipitation_probability"][index]
+        rain_amount = hourly.get("precipitation", hourly["rain"])[index]
 
         # Rain decision threshold
         rain_expected = (
@@ -255,7 +250,7 @@ def process_telemetry(
     data: TelemetryPayload
 ):
 
-    global latest_system_state
+    global latest_system_state, last_irrigation_at
 
     # --------------------------------------------------------
     # Check ML Model
@@ -355,7 +350,7 @@ def process_telemetry(
             ) = check_rain_next_hour()
 
 
-            if rain_expected:
+            if rain_expected and override_mode == "auto":
 
                 # --------------------------------------------
                 # Rain expected → DO NOT IRRIGATE
@@ -385,6 +380,11 @@ def process_telemetry(
                     "ML Triggered Irrigation"
                 )
 
+            if override_mode == "skip_rain" and rain_expected:
+                pump_status = "ON"
+                weather_override = False
+                override_reason = "Rain block manually overridden; ML irrigation allowed"
+
 
     else:
 
@@ -397,6 +397,19 @@ def process_telemetry(
         override_reason = (
             "Soil Moisture Optimal"
         )
+
+    if override_mode == "force":
+        if data.water_tank_level < 15.0:
+            pump_status = "OFF"
+            safety_override = True
+            override_reason = "Force watering blocked: water tank below 15% safety limit"
+        else:
+            pump_status = "ON"
+            weather_override = False
+            override_reason = "Farmer force watering override"
+
+    if pump_status == "ON" and latest_system_state.get("pump_status") != "ON":
+        last_irrigation_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
     # ========================================================
@@ -436,7 +449,10 @@ def process_telemetry(
         "rain_amount": rain_amount,
 
 
-        "override_reason": override_reason
+        "override_reason": override_reason,
+        "override_mode": override_mode,
+        "last_irrigation_at": last_irrigation_at,
+        "telemetry_received_at": datetime.now(timezone.utc).isoformat(timespec="seconds")
     }
 
 
@@ -470,6 +486,19 @@ def process_telemetry(
 def get_dashboard_data():
 
     return latest_system_state
+
+
+class IrrigationOverrideRequest(BaseModel):
+    mode: Literal["auto", "skip_rain", "force"]
+
+
+@app.post("/api/irrigation/override")
+def set_irrigation_override(payload: IrrigationOverrideRequest):
+    """Set farmer control mode; low tank safety remains enforced on telemetry."""
+    global override_mode
+    override_mode = payload.mode
+    latest_system_state["override_mode"] = override_mode
+    return {"override_mode": override_mode, "message": "Control mode updated; applied on the next telemetry reading."}
 
 # ============================================================
 # Pydantic Schemas for AI Advisor & Feed
